@@ -173,37 +173,59 @@ app.get('/materia', async (req, res) => {
   }
 });
 
-// Busca fotos para sugerir baseado no título da matéria
+// Busca fotos usando Google Custom Search API
 app.get('/fotos', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ ok: false, erro: 'Query não informada' });
 
-  try {
-    // Usa a API pública do Unsplash para buscar fotos de esporte
-    // Fallback: usa Pexels API (gratuita)
-    const query = encodeURIComponent(q + ' futebol esporte');
-    
-    // Tenta Unsplash (sem chave, acesso limitado)
-    const unsplashUrl = `https://unsplash.com/napi/search/photos?query=${query}&per_page=6&orientation=landscape`;
-    
-    const r = await axios.get(unsplashUrl, {
-      headers: {
-        'User-Agent': HEADERS['User-Agent'],
-        'Accept': 'application/json',
-        'Referer': 'https://unsplash.com/',
-      },
-      timeout: 10000
-    });
+  const GOOGLE_API_KEY = 'AIzaSyB-Opnly-eLwoElsKdIzYFBSpS3n1Y8dxE';
+  const GOOGLE_CX = '52eb526090e0d46cb';
 
-    const fotos = (r.data?.results || []).slice(0, 6).map(f => ({
-      url: f.urls?.regular || f.urls?.small || '',
-      thumb: f.urls?.small || f.urls?.thumb || '',
-      autor: f.user?.name || '',
-      alt: f.alt_description || q,
+  function extrairKeywords(titulo) {
+    const times = ['fluminense','corinthians','flamengo','palmeiras','são paulo','santos',
+      'grêmio','inter','atletico','vasco','botafogo','cruzeiro','bahia','fortaleza'];
+    const tl = titulo.toLowerCase();
+    const timeEncontrado = times.find(t => tl.includes(t));
+    if (timeEncontrado) return timeEncontrado + ' futebol 2026';
+    if (tl.includes('neymar')) return 'neymar santos 2026';
+    if (tl.includes('libertadores')) return 'libertadores 2026 futebol';
+    if (tl.includes('brasileirão') || tl.includes('brasileiro')) return 'brasileirão 2026';
+    if (tl.includes('copa')) return 'copa futebol brasil 2026';
+    return 'futebol brasil 2026';
+  }
+
+  const keywords = extrairKeywords(q);
+
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(keywords)}&searchType=image&imgType=photo&imgSize=large&num=6&safe=active`;
+
+    const r = await axios.get(url, { timeout: 10000 });
+    const items = r.data?.items || [];
+
+    const fotos = items.map(item => ({
+      url: item.link || '',
+      thumb: item.image?.thumbnailLink || item.link || '',
+      autor: item.displayLink || '',
+      alt: item.title || keywords,
     })).filter(f => f.url);
 
-    res.json({ ok: true, fotos });
+    if (fotos.length > 0) {
+      return res.json({ ok: true, fotos });
+    }
+
+    // Fallback: busca genérica futebol
+    const url2 = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=futebol+brasileiro+2026&searchType=image&imgType=photo&imgSize=large&num=6&safe=active`;
+    const r2 = await axios.get(url2, { timeout: 10000 });
+    const fotos2 = (r2.data?.items || []).map(item => ({
+      url: item.link || '',
+      thumb: item.image?.thumbnailLink || item.link || '',
+      autor: item.displayLink || '',
+      alt: item.title || 'futebol',
+    })).filter(f => f.url);
+
+    res.json({ ok: true, fotos: fotos2 });
   } catch(e) {
+    console.log('Erro fotos Google:', e.message);
     res.json({ ok: false, fotos: [], erro: e.message });
   }
 });
