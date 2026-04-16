@@ -1,0 +1,15 @@
+{
+  "name": "duda-news-server",
+  "version": "1.0.0",
+  "description": "Servidor para buscar matérias do GaúchaZH para a Duda",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5"
+  }
+}
