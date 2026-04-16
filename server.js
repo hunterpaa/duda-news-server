@@ -163,6 +163,107 @@ app.get('/materia', async (req, res) => {
   }
 });
 
+// ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
+// Estratégia: busca imagens no Bing Images (sem API key, sem cartão)
+// retorna até 6 URLs de imagem diretamente utilizáveis
+app.get('/buscar-fotos', async (req, res) => {
+  const { titulo } = req.query;
+  if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
+
+  const busca = titulo + ' esporte futebol';
+  const query = encodeURIComponent(busca);
+
+  // Tentativa 1: Bing Images
+  try {
+    const bingUrl = `https://www.bing.com/images/search?q=${query}&form=HDRSC2&first=1&tsc=ImageHoverTitle`;
+    const response = await axios.get(bingUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'Referer': 'https://www.bing.com/',
+      },
+      timeout: 15000,
+    });
+
+    const $ = cheerio.load(response.data);
+    const fotos = [];
+
+    // Bing embute os dados das imagens em atributos m= (JSON) nos elementos .iusc
+    $('.iusc').each((i, el) => {
+      if (fotos.length >= 6) return false;
+      try {
+        const m = $(el).attr('m');
+        if (!m) return;
+        const dados = JSON.parse(m);
+        const url = dados.murl; // URL original da imagem
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+          fotos.push(url);
+        }
+      } catch (e) { /* ignora JSON inválido */ }
+    });
+
+    // Fallback: tenta pegar src de imagens diretas se .iusc não funcionou
+    if (fotos.length === 0) {
+      $('img.mimg').each((i, el) => {
+        if (fotos.length >= 6) return false;
+        const src = $(el).attr('src') || $(el).attr('data-src');
+        if (src && src.startsWith('http') && !src.includes('bing.com')) {
+          fotos.push(src);
+        }
+      });
+    }
+
+    if (fotos.length > 0) {
+      return res.json({ ok: true, total: fotos.length, fotos, fonte: 'bing' });
+    }
+  } catch (e) {
+    console.error('Bing falhou:', e.message);
+  }
+
+  // Tentativa 2: DuckDuckGo Images
+  try {
+    const ddgUrl = `https://duckduckgo.com/?q=${query}&iax=images&ia=images`;
+    const tokenRes = await axios.get(ddgUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+      timeout: 10000,
+    });
+
+    // Extrai o token vqd necessário para a API de imagens do DDG
+    const vqdMatch = tokenRes.data.match(/vqd=([\d-]+)/);
+    if (vqdMatch) {
+      const vqd = vqdMatch[1];
+      const apiUrl = `https://duckduckgo.com/i.js?q=${query}&vqd=${vqd}&f=,,,,,&p=1`;
+      const imgRes = await axios.get(apiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://duckduckgo.com/',
+          'Accept': 'application/json',
+        },
+        timeout: 10000,
+      });
+
+      const resultados = imgRes.data?.results || [];
+      const fotos = resultados
+        .slice(0, 6)
+        .map(r => r.image)
+        .filter(url => url && url.startsWith('http'));
+
+      if (fotos.length > 0) {
+        return res.json({ ok: true, total: fotos.length, fotos, fonte: 'duckduckgo' });
+      }
+    }
+  } catch (e) {
+    console.error('DuckDuckGo falhou:', e.message);
+  }
+
+  return res.status(500).json({ ok: false, erro: 'Não foi possível buscar fotos. Tente de novo.' });
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 // UPLOAD DE FOTO
 app.post('/upload-foto', async (req, res) => {
   const { fotoUrl, titulo } = req.body;
@@ -176,7 +277,6 @@ app.post('/upload-foto', async (req, res) => {
   }
 
   try {
-    // Baixa a imagem
     const imgResponse = await axios.get(fotoUrl, {
       responseType: 'arraybuffer',
       timeout: 15000,
@@ -186,18 +286,15 @@ app.post('/upload-foto', async (req, res) => {
       }
     });
 
-    // Descobre o tipo da imagem
     const contentType = imgResponse.headers['content-type'] || 'image/jpeg';
     const ext = contentType.includes('png') ? 'png' : contentType.includes('gif') ? 'gif' : 'jpg';
 
-    // Monta o nome do arquivo com o título da matéria
     const nomeArquivo = titulo
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .substring(0, 80) + '.' + ext;
 
-    // Monta o FormData
     const form = new FormData();
     form.append('files[]', Buffer.from(imgResponse.data), {
       filename: nomeArquivo,
@@ -212,7 +309,6 @@ app.post('/upload-foto', async (req, res) => {
     form.append('transparencia_wda[0]', '0');
     form.append('publica[0]', '1');
 
-    // Faz o upload no NextSite
     const uploadRes = await axios.post(
       'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
       form,
