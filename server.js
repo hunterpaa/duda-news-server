@@ -14,8 +14,6 @@ const HEADERS = {
   'Referer': 'https://www.google.com/',
 };
 
-// Usa o rss2json como proxy para converter feeds em JSON
-// Fontes: GaúchaZH esportes + Estadão Conteúdo via rss2json
 const RSS_SOURCES = [
   'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fgauchazh.clicrbs.com.br%2Fesportes%2Ffeed%2Fatom%2F&count=50',
   'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fgauchazh.clicrbs.com.br%2Fultimas-noticias%2Ftag%2Festadao-conteudo%2Ffeed%2Fatom%2F&count=50',
@@ -36,22 +34,12 @@ function isEsporte(texto) {
   return SPORT_KEYWORDS.some(k => t.includes(k));
 }
 
-function isHoje(dateStr) {
-  if (!dateStr) return true;
-  const hoje = new Date();
-  const data = new Date(dateStr);
-  return (
-    data.getDate() === hoje.getDate() &&
-    data.getMonth() === hoje.getMonth() &&
-    data.getFullYear() === hoje.getFullYear()
-  );
-}
-
-function formatarHora(dateStr) {
+function formatarData(dateStr) {
   if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'h';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
+      ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'h';
   } catch(e) { return ''; }
 }
 
@@ -85,7 +73,7 @@ app.get('/materias', async (req, res) => {
       todas = todas.concat(items);
     }
 
-    // Remove duplicatas
+    // Remove duplicatas pelo título
     const vistos = new Set();
     todas = todas.filter(m => {
       const key = m.titulo.toLowerCase().trim();
@@ -94,28 +82,24 @@ app.get('/materias', async (req, res) => {
       return true;
     });
 
-    // Filtra esportes
-    let esportes = todas.filter(m => isEsporte(m.titulo + ' ' + m.resumo));
+    // Filtra só esportes — SEM filtro de data
+    const esportes = todas.filter(m => isEsporte(m.titulo + ' ' + m.resumo));
 
-    // Filtra hoje
-    const hoje = esportes.filter(m => isHoje(m.data));
-    const resultado = hoje.length > 0 ? hoje : esportes;
+    if (esportes.length === 0) {
+      return res.json({ ok: false, erro: 'Nenhuma matéria de esporte encontrada.' });
+    }
 
     // Monta lista final
-    const materias = resultado.map(m => ({
+    const materias = esportes.map(m => ({
       titulo: m.titulo,
       link: m.link,
-      tempo: formatarHora(m.data),
+      tempo: formatarData(m.data),
       data: m.data,
       foto: m.foto,
     }));
 
     // Ordena mais recente primeiro
     materias.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
-
-    if (materias.length === 0) {
-      return res.json({ ok: false, erro: 'Nenhuma matéria de esporte encontrada hoje.' });
-    }
 
     res.json({ ok: true, total: materias.length, materias });
   } catch(e) {
