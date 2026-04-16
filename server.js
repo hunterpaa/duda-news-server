@@ -55,7 +55,6 @@ async function buscarMateriasDaAPI(page = 1, limit = 20) {
       type: null,
     },
   };
-
   const res = await axios.post(GRAPHQL_URL, body, { headers: HEADERS, timeout: 15000 });
   return res.data?.data?.contents || [];
 }
@@ -69,6 +68,59 @@ function formatarData(timestamp) {
   } catch(e) { return ''; }
 }
 
+// Formata o texto da matéria com parágrafos organizados
+function formatarTexto($) {
+  const paragrafos = [];
+
+  // Pega título h1
+  const titulo = $('h1').first().text().trim();
+
+  // Seletores do corpo da matéria
+  const contentSels = [
+    '[class*="article-body"]', '[class*="article-content"]',
+    '[class*="post-content"]', '[class*="entry-content"]',
+    '[class*="story-body"]', '[class*="news-content"]',
+    '[class*="content-text"]', 'article', 'main',
+  ];
+
+  let container = null;
+  for (const sel of contentSels) {
+    const el = $(sel).first();
+    if (el.length) { container = el; break; }
+  }
+
+  if (container) {
+    // Remove lixo
+    container.find('script,style,nav,aside,iframe,noscript,.ad,.ads,.share,.related,.comments,.newsletter,figure,button,.paywall').remove();
+
+    // Percorre cada elemento filho mantendo estrutura
+    container.find('p, h2, h3, h4, li').each((i, el) => {
+      const tag = el.tagName?.toLowerCase();
+      const texto = $(el).text().replace(/\s+/g, ' ').trim();
+      if (!texto || texto.length < 3) return;
+
+      if (tag === 'h2' || tag === 'h3' || tag === 'h4') {
+        paragrafos.push(`\n${texto.toUpperCase()}\n`);
+      } else if (tag === 'li') {
+        paragrafos.push(`• ${texto}`);
+      } else {
+        paragrafos.push(texto);
+      }
+    });
+  }
+
+  // Fallback: todos os <p>
+  if (paragrafos.length === 0) {
+    $('script,style,nav,header,footer,aside,iframe').remove();
+    $('p').each((i, el) => {
+      const t = $(el).text().replace(/\s+/g, ' ').trim();
+      if (t.length > 40) paragrafos.push(t);
+    });
+  }
+
+  return paragrafos.join('\n\n');
+}
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor da Duda rodando!' });
 });
@@ -76,7 +128,6 @@ app.get('/', (req, res) => {
 // Busca matérias do Estadão Conteúdo no GaúchaZH
 app.get('/materias', async (req, res) => {
   try {
-    // Busca as últimas 20 matérias
     const items = await buscarMateriasDaAPI(1, 20);
 
     if (!items || items.length === 0) {
@@ -92,72 +143,68 @@ app.get('/materias', async (req, res) => {
       autor: item.authors?.[0]?.name || '',
     })).filter(m => m.titulo && m.link);
 
-    // Ordena mais recente primeiro
     materias.sort((a, b) => (b.data || 0) - (a.data || 0));
 
     res.json({ ok: true, total: materias.length, materias });
   } catch(e) {
-    console.log('Erro:', e.message);
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
-// Busca texto completo de uma matéria
+// Busca texto completo formatado de uma matéria
 app.get('/materia', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
 
   try {
     const response = await axios.get(url, {
-      headers: {
-        ...HEADERS,
-        'Accept': 'text/html,application/xhtml+xml',
-        'Content-Type': undefined,
-      },
+      headers: { ...HEADERS, 'Accept': 'text/html,application/xhtml+xml', 'Content-Type': undefined },
       timeout: 15000
     });
     const $ = cheerio.load(response.data);
 
-    const titulo =
-      $('h1').first().text().trim() ||
-      $('meta[property="og:title"]').attr('content') || '';
-
-    const foto =
-      $('meta[property="og:image"]').attr('content') ||
-      $('article img').first().attr('src') || '';
-
-    $('script,style,nav,header,footer,aside,iframe,noscript,.ad,.ads,.share,.related,.comments,.newsletter,figure').remove();
-
-    const contentSels = [
-      '[class*="article-body"]', '[class*="article-content"]',
-      '[class*="post-content"]', '[class*="entry-content"]',
-      '[class*="story-body"]', '[class*="news-content"]',
-      '[class*="content-text"]', '[class*="materia"]',
-      'article', '.content', 'main',
-    ];
-
-    let texto = '';
-    for (const sel of contentSels) {
-      const el = $(sel).first();
-      if (el.length) {
-        const t = el.text().replace(/\s+/g, ' ').trim();
-        if (t.length > 300) { texto = t; break; }
-      }
-    }
-
-    if (!texto || texto.length < 300) {
-      const ps = [];
-      $('p').each((i, el) => {
-        const t = $(el).text().trim();
-        if (t.length > 40) ps.push(t);
-      });
-      const fallback = ps.join('\n\n');
-      if (fallback.length > texto.length) texto = fallback;
-    }
+    const titulo = $('h1').first().text().trim() || $('meta[property="og:title"]').attr('content') || '';
+    const foto = $('meta[property="og:image"]').attr('content') || $('article img').first().attr('src') || '';
+    const texto = formatarTexto($);
 
     res.json({ ok: true, titulo, foto, texto });
   } catch(e) {
     res.status(500).json({ ok: false, erro: e.message });
+  }
+});
+
+// Busca fotos para sugerir baseado no título da matéria
+app.get('/fotos', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ ok: false, erro: 'Query não informada' });
+
+  try {
+    // Usa a API pública do Unsplash para buscar fotos de esporte
+    // Fallback: usa Pexels API (gratuita)
+    const query = encodeURIComponent(q + ' futebol esporte');
+    
+    // Tenta Unsplash (sem chave, acesso limitado)
+    const unsplashUrl = `https://unsplash.com/napi/search/photos?query=${query}&per_page=6&orientation=landscape`;
+    
+    const r = await axios.get(unsplashUrl, {
+      headers: {
+        'User-Agent': HEADERS['User-Agent'],
+        'Accept': 'application/json',
+        'Referer': 'https://unsplash.com/',
+      },
+      timeout: 10000
+    });
+
+    const fotos = (r.data?.results || []).slice(0, 6).map(f => ({
+      url: f.urls?.regular || f.urls?.small || '',
+      thumb: f.urls?.small || f.urls?.thumb || '',
+      autor: f.user?.name || '',
+      alt: f.alt_description || q,
+    })).filter(f => f.url);
+
+    res.json({ ok: true, fotos });
+  } catch(e) {
+    res.json({ ok: false, fotos: [], erro: e.message });
   }
 });
 
