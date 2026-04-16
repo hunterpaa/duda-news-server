@@ -232,3 +232,6 @@ app.get('/fotos', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));
+app.get('/bot-teste', async (req, res) => {
+  res.json({ ok: true, mensagem: 'bot funcionando' });
+});
