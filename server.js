@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
+const FormData = require('form-data');
 
 const app = express();
 app.use(cors());
@@ -48,16 +49,26 @@ function formatarData(timestamp) {
   return d.toLocaleString('pt-BR');
 }
 
+// Cookie em memória
+let phpSessionId = '';
+
 // HOME
 app.get('/', (req, res) => {
   res.json({ ok: true, message: 'Servidor da Duda rodando!' });
+});
+
+// SALVAR COOKIE
+app.post('/cookie', (req, res) => {
+  const { phpsessid } = req.body;
+  if (!phpsessid) return res.status(400).json({ ok: false, erro: 'Cookie não informado' });
+  phpSessionId = phpsessid;
+  res.json({ ok: true, message: 'Cookie salvo!' });
 });
 
 // MATÉRIAS
 app.get('/materias', async (req, res) => {
   try {
     const items = await buscarMateriasDaAPI(1, 20);
-
     const materias = items.map(item => ({
       titulo: item.headline?.text || '',
       link: item.links?.canonical || '',
@@ -66,20 +77,17 @@ app.get('/materias', async (req, res) => {
       foto: item.img?.src || '',
       autor: item.authors?.[0]?.name || '',
     }));
-
     res.json({ ok: true, total: materias.length, materias });
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
-// MATÉRIA COMPLETA — parágrafos separados por \n\n, sem lixo
+// MATÉRIA COMPLETA
 app.get('/materia', async (req, res) => {
   const { url } = req.query;
-
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
 
-  // Tenta com diferentes User-Agents
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
@@ -96,7 +104,6 @@ app.get('/materia', async (req, res) => {
           'User-Agent': ua,
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-          'Accept-Encoding': 'gzip, deflate, br',
           'Cache-Control': 'no-cache',
           'Referer': 'https://www.google.com/',
         },
@@ -104,7 +111,7 @@ app.get('/materia', async (req, res) => {
         maxRedirects: 5,
       });
       if (response.status === 200) break;
-    } catch(e) {
+    } catch (e) {
       lastError = e;
       continue;
     }
@@ -115,47 +122,30 @@ app.get('/materia', async (req, res) => {
   }
 
   try {
-
     const $ = cheerio.load(response.data);
-
-    // Título
     const titulo = $('h1').first().text().trim();
 
-    // Remove elementos indesejados
     $('script, style, nav, header, footer, aside, figure, figcaption').remove();
     $('[class*="ad"], [class*="banner"], [class*="related"], [class*="recommend"]').remove();
     $('[class*="newsletter"], [class*="paywall"], [class*="subscription"]').remove();
 
-    // Pega parágrafos do corpo da matéria
-    // Tenta seletores específicos do GaúchaZH primeiro
     let paragrafos = [];
-
     const seletores = [
-      'article p',
-      '[class*="article"] p',
-      '[class*="content"] p',
-      '[class*="texto"] p',
-      '[class*="body"] p',
-      'main p',
-      '.post p',
+      'article p', '[class*="article"] p', '[class*="content"] p',
+      '[class*="texto"] p', '[class*="body"] p', 'main p', '.post p',
     ];
 
     for (const sel of seletores) {
       const encontrados = [];
       $(sel).each((i, el) => {
         const txt = $(el).text().trim();
-        // Filtra parágrafos muito curtos ou que são lixo
         if (txt.length > 40 && !txt.includes('©') && !txt.includes('Todos os direitos')) {
           encontrados.push(txt);
         }
       });
-      if (encontrados.length >= 3) {
-        paragrafos = encontrados;
-        break;
-      }
+      if (encontrados.length >= 3) { paragrafos = encontrados; break; }
     }
 
-    // Fallback: todos os <p> com mais de 60 chars
     if (paragrafos.length < 2) {
       $('p').each((i, el) => {
         const txt = $(el).text().trim();
@@ -165,30 +155,82 @@ app.get('/materia', async (req, res) => {
       });
     }
 
-    // Remove duplicatas
     paragrafos = [...new Set(paragrafos)];
-
     const texto = paragrafos.join('\n\n');
-
     res.json({ ok: true, titulo, texto });
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
-// FOTOS GOOGLE (mantido, mas sem chave válida retorna erro esperado)
-app.get('/fotos', async (req, res) => {
-  const q = req.query.q || 'futebol brasil';
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
-  const GOOGLE_CX = process.env.GOOGLE_CX || '';
+// UPLOAD DE FOTO
+app.post('/upload-foto', async (req, res) => {
+  const { fotoUrl, titulo } = req.body;
+
+  if (!fotoUrl || !titulo) {
+    return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
+  }
+
+  if (!phpSessionId) {
+    return res.status(401).json({ ok: false, erro: 'Cookie de sessão não encontrado. Clique no favorito Tanaka Sports no NextSite primeiro!' });
+  }
 
   try {
-    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&searchType=image&key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}`;
-    const r = await axios.get(url);
-    const fotos = (r.data.items || []).map(i => ({ url: i.link }));
-    res.json({ ok: true, fotos });
+    // Baixa a imagem
+    const imgResponse = await axios.get(fotoUrl, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://www.google.com/',
+      }
+    });
+
+    // Descobre o tipo da imagem
+    const contentType = imgResponse.headers['content-type'] || 'image/jpeg';
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('gif') ? 'gif' : 'jpg';
+
+    // Monta o nome do arquivo com o título da matéria
+    const nomeArquivo = titulo
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 80) + '.' + ext;
+
+    // Monta o FormData
+    const form = new FormData();
+    form.append('files[]', Buffer.from(imgResponse.data), {
+      filename: nomeArquivo,
+      contentType: contentType,
+    });
+    form.append('parent_wda[0]', '6');
+    form.append('empresa', '1');
+    form.append('titulo_wda[0]', nomeArquivo.replace('.' + ext, ''));
+    form.append('credito_wda[0]', 'Estadão Conteúdo');
+    form.append('descricao_wda[0]', titulo);
+    form.append('keyword_wda[0]', '');
+    form.append('transparencia_wda[0]', '0');
+    form.append('publica[0]', '1');
+
+    // Faz o upload no NextSite
+    const uploadRes = await axios.post(
+      'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          'Cookie': `PHPSESSID=${phpSessionId}`,
+          'Referer': 'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/novo.php?empresa=1&parent=6',
+          'Origin': 'https://admin-dc4.nextsite.com.br',
+        },
+        timeout: 30000,
+      }
+    );
+
+    res.json({ ok: true, message: 'Foto enviada com sucesso!', nomeArquivo, resposta: uploadRes.data });
+
   } catch (e) {
-    res.json({ ok: false, erro: e.message });
+    res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
