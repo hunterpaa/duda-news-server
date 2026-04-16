@@ -235,3 +235,62 @@ app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`))
 app.get('/bot-teste', async (req, res) => {
   res.json({ ok: true, mensagem: 'bot funcionando' });
 });
+const { chromium } = require('playwright');
+
+app.post('/publicar', async (req, res) => {
+  let browser;
+
+  try {
+    const { titulo, texto, imagem, urlLogin, urlNovoPost } = req.body;
+
+    browser = await chromium.launch({
+      headless: true
+    });
+
+    const page = await browser.newPage();
+
+    // 1. abre login do NextSite
+    await page.goto(urlLogin);
+
+    // ⚠️ AQUI VAI DEPENDER DO SEU CMS (vou ajustar depois)
+    await page.fill('input[name="email"]', process.env.NEXT_EMAIL || '');
+    await page.fill('input[name="password"]', process.env.NEXT_PASS || '');
+    await page.click('button[type="submit"]');
+
+    await page.waitForTimeout(4000);
+
+    // 2. vai pra criação de post
+    await page.goto(urlNovoPost);
+
+    // 3. título
+    await page.fill('input[name="title"]', titulo);
+
+    // 4. texto (modo simples)
+    await page.fill('textarea, div[contenteditable="true"]', texto);
+
+    // 5. imagem (placeholder — vamos ajustar depois)
+    if (imagem) {
+      console.log("Imagem recebida:", imagem);
+    }
+
+    // 6. publicar
+    await page.click('button:has-text("Publicar")');
+
+    await page.waitForTimeout(3000);
+
+    await browser.close();
+
+    res.json({
+      ok: true,
+      message: "Publicado com sucesso"
+    });
+
+  } catch (err) {
+    if (browser) await browser.close();
+
+    res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
