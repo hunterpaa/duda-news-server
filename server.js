@@ -14,10 +14,12 @@ const HEADERS = {
   'Referer': 'https://www.google.com/',
 };
 
-const RSS_FEEDS = [
-  'https://gauchazh.clicrbs.com.br/esportes/feed/atom/',
-  'https://gauchazh.clicrbs.com.br/ultimas-noticias/tag/estadao-conteudo/feed/atom/',
-  'https://gauchazh.clicrbs.com.br/feed/atom/',
+// Usa o rss2json como proxy para converter feeds em JSON
+// Fontes: GaúchaZH esportes + Estadão Conteúdo via rss2json
+const RSS_SOURCES = [
+  'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fgauchazh.clicrbs.com.br%2Fesportes%2Ffeed%2Fatom%2F&count=50',
+  'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fgauchazh.clicrbs.com.br%2Fultimas-noticias%2Ftag%2Festadao-conteudo%2Ffeed%2Fatom%2F&count=50',
+  'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.lance.com.br%2Ffeed%2F&count=50',
 ];
 
 const SPORT_KEYWORDS = [
@@ -25,9 +27,8 @@ const SPORT_KEYWORDS = [
   'time','clube','rodada','liga','placar','vitória','derrota','empate',
   'grêmio','inter','corinthians','flamengo','palmeiras','são paulo','santos',
   'atletico','vasco','botafogo','cruzeiro','fluminense','libertadores',
-  'brasileirão','brasileiro','nba','tênis','f1','fórmula','olimp',
-  'basquete','vôlei','ciclismo','rugby','boxe','mma','ufc','corrida',
-  'maratona','natação','neymar','messi','cristiano',
+  'brasileirão','brasileiro','nba','tênis','f1','fórmula','basquete',
+  'vôlei','boxe','mma','ufc','natação','neymar','messi',
 ];
 
 function isEsporte(texto) {
@@ -54,31 +55,18 @@ function formatarHora(dateStr) {
   } catch(e) { return ''; }
 }
 
-async function buscarRSS(url) {
+async function buscarFeed(url) {
   try {
-    const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
-    const $ = cheerio.load(res.data, { xmlMode: true });
-    const items = [];
-
-    $('entry').each((i, el) => {
-      const titulo = $(el).find('title').first().text().trim();
-      const link = $(el).find('link').attr('href') || $(el).find('link').text().trim();
-      const data = $(el).find('published, updated').first().text().trim();
-      const resumo = $(el).find('summary, content').first().text().trim();
-      if (titulo && link) items.push({ titulo, link, data, resumo });
-    });
-
-    if (items.length === 0) {
-      $('item').each((i, el) => {
-        const titulo = $(el).find('title').first().text().trim();
-        const link = $(el).find('link').first().text().trim() || $(el).find('link').attr('href');
-        const data = $(el).find('pubDate').first().text().trim();
-        const resumo = $(el).find('description').first().text().trim();
-        if (titulo && link) items.push({ titulo, link, data, resumo });
-      });
-    }
-
-    return items;
+    const res = await axios.get(url, { timeout: 10000 });
+    const data = res.data;
+    if (data.status !== 'ok' || !data.items) return [];
+    return data.items.map(item => ({
+      titulo: item.title || '',
+      link: item.link || item.url || '',
+      data: item.pubDate || '',
+      resumo: item.description || item.content || '',
+      foto: item.thumbnail || item.enclosure?.link || '',
+    }));
   } catch(e) {
     return [];
   }
@@ -90,35 +78,39 @@ app.get('/', (req, res) => {
 
 app.get('/materias', async (req, res) => {
   try {
-    let todasMaterias = [];
+    let todas = [];
 
-    for (const feed of RSS_FEEDS) {
-      const items = await buscarRSS(feed);
-      todasMaterias = todasMaterias.concat(items);
+    for (const src of RSS_SOURCES) {
+      const items = await buscarFeed(src);
+      todas = todas.concat(items);
     }
 
     // Remove duplicatas
-    const titulos = new Set();
-    todasMaterias = todasMaterias.filter(m => {
-      if (titulos.has(m.titulo)) return false;
-      titulos.add(m.titulo);
+    const vistos = new Set();
+    todas = todas.filter(m => {
+      const key = m.titulo.toLowerCase().trim();
+      if (vistos.has(key) || !key) return false;
+      vistos.add(key);
       return true;
     });
 
     // Filtra esportes
-    let esportes = todasMaterias.filter(m => isEsporte(m.titulo + ' ' + m.resumo));
+    let esportes = todas.filter(m => isEsporte(m.titulo + ' ' + m.resumo));
 
     // Filtra hoje
     const hoje = esportes.filter(m => isHoje(m.data));
     const resultado = hoje.length > 0 ? hoje : esportes;
 
+    // Monta lista final
     const materias = resultado.map(m => ({
       titulo: m.titulo,
       link: m.link,
       tempo: formatarHora(m.data),
       data: m.data,
+      foto: m.foto,
     }));
 
+    // Ordena mais recente primeiro
     materias.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
 
     if (materias.length === 0) {
@@ -145,8 +137,7 @@ app.get('/materia', async (req, res) => {
 
     const foto =
       $('meta[property="og:image"]').attr('content') ||
-      $('article img').first().attr('src') ||
-      $('figure img').first().attr('src') || '';
+      $('article img').first().attr('src') || '';
 
     $('script,style,nav,header,footer,aside,iframe,noscript,.ad,.ads,.share,.related,.comments,.newsletter,figure').remove();
 
@@ -173,7 +164,8 @@ app.get('/materia', async (req, res) => {
         const t = $(el).text().trim();
         if (t.length > 40) ps.push(t);
       });
-      if (ps.join('\n\n').length > texto.length) texto = ps.join('\n\n');
+      const fallback = ps.join('\n\n');
+      if (fallback.length > texto.length) texto = fallback;
     }
 
     res.json({ ok: true, titulo, foto, texto });
