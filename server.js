@@ -79,15 +79,42 @@ app.get('/materia', async (req, res) => {
 
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
 
+  // Tenta com diferentes User-Agents
+  const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    'Googlebot/2.1 (+http://www.google.com/bot.html)',
+  ];
+
+  let response = null;
+  let lastError = null;
+
+  for (const ua of userAgents) {
+    try {
+      response = await axios.get(url, {
+        headers: {
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Referer': 'https://www.google.com/',
+        },
+        timeout: 15000,
+        maxRedirects: 5,
+      });
+      if (response.status === 200) break;
+    } catch(e) {
+      lastError = e;
+      continue;
+    }
+  }
+
+  if (!response) {
+    return res.status(500).json({ ok: false, erro: lastError?.message || 'Não foi possível acessar a matéria' });
+  }
+
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
-      },
-      timeout: 15000
-    });
 
     const $ = cheerio.load(response.data);
 
