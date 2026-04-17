@@ -28,7 +28,6 @@ body { font-family: 'Poppins', sans-serif; background: var(--sakura); color: var
 .header h1 { font-size: 20px; margin: 0; color: white; }
 .header p { font-size: 12px; margin: 0; color: rgba(255,255,255,0.9); }
 
-/* GRID RESPONSIVO */
 .container { 
   max-width: 1200px; margin: 0 auto; padding: 0 15px;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; 
@@ -41,17 +40,20 @@ body { font-family: 'Poppins', sans-serif; background: var(--sakura); color: var
 }
 .card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 
-/* LISTA E INPUTS */
-#news-list { max-height: 300px; overflow-y: auto; margin-bottom: 10px; border: 1px inset var(--sakura); padding: 5px; }
+/* AJUSTE NA LISTA DE NOTÍCIAS PARA FICAR LEGÍVEL */
+#news-list { max-height: 400px; overflow-y: auto; margin-bottom: 10px; padding: 5px; }
 .news-item {
-  background: var(--sakura); padding: 10px; border-radius: 8px;
-  margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+  background: var(--sakura); padding: 15px; border-radius: 10px;
+  margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px;
+  border: 1px solid #eee; transition: 0.2s;
 }
+.news-title { font-size: 13px; font-weight: 600; line-height: 1.4; color: #333; }
+
 input, textarea {
-  width: 100%; padding: 10px; margin: 5px 0 15px 0;
+  width: 100%; padding: 12px; margin: 5px 0 15px 0;
   border: 2px solid #F0F0F0; border-radius: 8px; font-family: inherit; box-sizing: border-box;
 }
-textarea { height: 150px; resize: none; }
+textarea { height: 200px; resize: none; font-size: 14px; }
 
 .btn {
   background: var(--primary); color: white; border: none;
@@ -59,7 +61,7 @@ textarea { height: 150px; resize: none; }
   font-weight: 600; transition: 0.3s; width: 100%;
 }
 .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-.btn-check { background: #4CAF50; margin-top: 10px; }
+.btn-google { background: #4285f4; margin-bottom: 15px; text-decoration: none; display: flex; justify-content: center; align-items: center; }
 
 .previa-box {
   width: 100%; min-height: 150px; background: #f9f9f9; border-radius: 10px;
@@ -95,25 +97,40 @@ textarea { height: 150px; resize: none; }
 
   <div class="card">
     <div class="card-title">2️⃣ Revisar Texto</div>
-    <input type="text" id="edit-titulo" placeholder="Título da notícia...">
-    <textarea id="edit-texto" placeholder="Conteúdo da matéria..."></textarea>
+    <label style="font-size:12px; font-weight:600;">Título da Notícia:</label>
+    <input type="text" id="edit-titulo" placeholder="Título aparecerá aqui...">
+    <label style="font-size:12px; font-weight:600;">Conteúdo:</label>
+    <textarea id="edit-texto" placeholder="O texto da matéria aparecerá aqui..."></textarea>
     <div class="mascote">🐶</div>
   </div>
 
   <div class="card">
     <div class="card-title">3️⃣ Foto (Ninpo)</div>
-    <label style="font-size:12px;">Link da Imagem:</label>
-    <input type="url" id="foto-url" placeholder="Cole o link .jpg ou .png aqui..." oninput="atualizarPrevia()">
+    
+    <div style="background:#e8f0fe; border:1.5px solid #b3d4f5; border-radius:10px; padding:12px; margin-bottom:15px;">
+      <p style="font-size:11px; color:#555; margin-bottom:8px;">Clique para buscar a foto no Google:</p>
+      <a id="btn-google-fotos" href="#" target="_blank" class="btn btn-google">🔍 Abrir Google Imagens</a>
+    </div>
+
+    <label style="font-size:12px; font-weight:600;">Link DIRETO da Imagem:</label>
+    <input type="url" id="foto-url" placeholder="Cole o link da foto aqui..." oninput="atualizarPrevia()">
+    
     <div class="previa-box" id="previa-container">
       <span style="font-size:12px; color:#ccc;">Prévia da Foto 🖼️</span>
     </div>
+
+    <div style="margin-top:15px;">
+      <label style="font-size:12px; font-weight:600;">Nome da foto no NextSite:</label>
+      <input type="text" id="foto-nome" placeholder="Ex: flamengo-noticia">
+    </div>
+    
     <div class="mascote">🐷</div>
   </div>
 
   <div class="card">
     <div class="card-title">4️⃣ Publicar</div>
-    <p style="font-size:13px; color: #666;">Confira se o texto e a foto estão corretos antes de enviar para o portal.</p>
-    <button class="btn btn-check" onclick="publicarNoticia()">🌸 Enviar para o NextSite</button>
+    <p style="font-size:13px; color: #666;">O texto será copiado automaticamente para você colar no NextSite.</p>
+    <button class="btn" style="background:#4CAF50;" onclick="publicarNoticia()">🌸 Copiar e Abrir NextSite</button>
     <div id="status-envio" style="margin-top:10px; font-size:12px; font-weight:bold; text-align:center;"></div>
     <div class="mascote">📜</div>
   </div>
@@ -124,7 +141,7 @@ const SERVER = 'https://duda-news-server.onrender.com';
 
 async function buscarMaterias() {
   const container = document.getElementById('news-list');
-  container.innerHTML = '<p style="text-align:center;">Invocando... 🌀</p>';
+  container.innerHTML = '<p style="text-align:center;">Invocando matérias... 🌀</p>';
   try {
     const res = await fetch(`${SERVER}/materias`);
     const data = await res.json();
@@ -132,8 +149,8 @@ async function buscarMaterias() {
     data.materias.forEach(m => {
       container.innerHTML += `
         <div class="news-item">
-          <span>${m.titulo.substring(0,35)}...</span>
-          <button class="btn" style="width:auto; padding:5px 10px;" onclick="carregarMateria('${m.link}')">Abrir</button>
+          <span class="news-title">${m.titulo}</span>
+          <button class="btn" style="padding:8px;" onclick="carregarMateria('${m.link}')">Abrir Matéria</button>
         </div>`;
     });
   } catch(e) { container.innerHTML = '<p>Erro ao conectar. ❌</p>'; }
@@ -142,13 +159,26 @@ async function buscarMaterias() {
 async function carregarMateria(url) {
   const tit = document.getElementById('edit-titulo');
   const txt = document.getElementById('edit-texto');
+  const btnGoogle = document.getElementById('btn-google-fotos');
+  const inputNomeFoto = document.getElementById('foto-nome');
+  
   tit.value = "Carregando...";
+  
   try {
     const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(url)}`);
     const data = await res.json();
+    
     tit.value = data.titulo;
     txt.value = data.texto;
-  } catch(e) { tit.value = "Erro ao carregar."; }
+
+    // CONFIGURA O GOOGLE IMAGENS COM O TÍTULO NOVO
+    const busca = data.titulo.split(' ').slice(0, 5).join(' ');
+    btnGoogle.href = `https://www.google.com/search?q=${encodeURIComponent(busca)}+futebol+2026&udm=2`;
+    
+    // GERA SUGESTÃO DE NOME DE FOTO (ex: titulo-da-materia)
+    inputNomeFoto.value = data.titulo.toLowerCase().replace(/[^\w\s]/gi, '').split(' ').slice(0,3).join('-');
+
+  } catch(e) { tit.value = "Erro ao carregar conteúdo."; }
 }
 
 function atualizarPrevia() {
@@ -160,15 +190,19 @@ function atualizarPrevia() {
 }
 
 function publicarNoticia() {
+  const titulo = document.getElementById('edit-titulo').value;
+  const texto = document.getElementById('edit-texto').value;
   const status = document.getElementById('status-envio');
-  status.style.color = "var(--primary)";
-  status.innerHTML = "Enviando missão... 🕊️";
+
+  // Copia para o clipboard (facilitando a vida da Duda)
+  navigator.clipboard.writeText(titulo + "\n\n" + texto);
   
-  // Aqui entraria sua lógica de POST para o NextSite
+  status.style.color = "#4CAF50";
+  status.innerHTML = "✅ Texto Copiado! Abrindo NextSite...";
+  
   setTimeout(() => {
-    status.style.color = "#4CAF50";
-    status.innerHTML = "✅ Publicado com sucesso!";
-  }, 2000);
+    window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8', '_blank');
+  }, 1500);
 }
 </script>
 </body>
