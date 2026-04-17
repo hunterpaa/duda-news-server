@@ -196,65 +196,99 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
-// Estratégia: DuckDuckGo Images (não bloqueia datacenters) com fallback em
-// Lance! e Máquina do Esporte via og:image
+// DuckDuckGo Images — não bloqueia datacenters, retorna fotos recentes
+// com retry automático em caso de rate limit (429)
 app.get('/buscar-fotos', async (req, res) => {
   const { titulo, pagina = '1' } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
   const pg = Math.max(1, parseInt(pagina) || 1);
-  // Query inteligente: palavras-chave + ano atual para fotos recentes
   const palavrasChave = extrairPalavrasChave(titulo);
-  const query = palavrasChave + ' futebol 2026';
+  // Query inteligente: só nomes próprios + ano para fotos recentes e relevantes
+  const query = palavrasChave + ' 2026';
   const offset = (pg - 1) * 6;
 
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     'Accept-Language': 'pt-BR,pt;q=0.9',
+    'Referer': 'https://duckduckgo.com/',
   };
 
-  // ── Tentativa 1: DuckDuckGo Images ──
-  try {
-    // Passo 1: pega o token vqd
-    const resVqd = await axios.get(`https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`, {
-      headers, timeout: 10000
-    });
-    const vqdMatch = resVqd.data.match(/vqd='(.*?)'/);
-    const vqd = vqdMatch?.[1];
+  // Tenta DuckDuckGo até 3 vezes com delay crescente
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      if (tentativa > 1) {
+        await new Promise(r => setTimeout(r, tentativa * 1500));
+      }
 
-    if (vqd) {
+      // Passo 1: pega o token vqd
+      const resVqd = await axios.get(
+        `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`,
+        { headers, timeout: 10000 }
+      );
+
+      const vqdMatch = resVqd.data.match(/vqd='([^']+)'/);
+      if (!vqdMatch) continue;
+      const vqd = vqdMatch[1];
+
       // Passo 2: busca imagens
       const resImgs = await axios.get('https://duckduckgo.com/i.js', {
         params: { l: 'br-pt', o: 'json', q: query, vqd, s: offset },
         headers, timeout: 10000
       });
+
       const results = resImgs.data?.results || [];
-      const fotos = results.slice(0, 6).map(r => r.image).filter(Boolean);
+      const fotos = results
+        .slice(0, 6)
+        .map(r => r.image)
+        .filter(u => u && u.startsWith('http'));
 
       if (fotos.length > 0) {
-        console.log(`DuckDuckGo: ${fotos.length} fotos para "${palavrasChave}"`);
+        console.log(`DDG ok (tentativa ${tentativa}): ${fotos.length} fotos para "${palavrasChave}"`);
         return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'duckduckgo' });
       }
+
+    } catch (e) {
+      console.error(`DDG tentativa ${tentativa} falhou: ${e.message}`);
+      if (tentativa === 3) break;
     }
-  } catch (e) {
-    console.error('DuckDuckGo falhou:', e.message);
   }
 
-  // ── Fallback: Lance! + Máquina do Esporte via og:image ──
+  // Fallback: og:image de notícias do Lance! e Máquina do Esporte
+  // Usa as MESMAS palavras-chave para busca mais precisa
   try {
     const [linksMaquina, linksLance] = await Promise.all([
-      axios.get(`https://maquinadoesporte.com.br/search/${encodeURIComponent(palavrasChave)}/feed/rss2/`, { headers, timeout: 8000 })
-        .then(r => [...(r.data.match(/<link>([^<]+)<\/link>/gi) || [])]
-          .map(m => m.replace(/<\/?link>/g,'').trim())
-          .filter(l => l.includes('maquinadoesporte.com.br') && !l.includes('/feed') && !l.endsWith('.br/'))
-          .slice((pg-1)*3, pg*3)
-        ).catch(() => []),
-      axios.get(`https://www.lance.com.br/busca?q=${encodeURIComponent(palavrasChave)}`, { headers, timeout: 8000 })
-        .then(r => [...new Set((r.data.match(/href="(https:\/\/www\.lance\.com\.br\/[^"]+\.html)"/gi) || [])
+      axios.get(
+        `https://maquinadoesporte.com.br/search/${encodeURIComponent(palavrasChave)}/feed/rss2/`,
+        { headers, timeout: 8000 }
+      ).then(r => [...(r.data.match(/<link>([^<]+)<\/link>/gi) || [])]
+        .map(m => m.replace(/<\/?link>/g,'').trim())
+        .filter(l => l.includes('maquinadoesporte.com.br') && !l.includes('/feed') && !l.endsWith('.br/'))
+        .slice((pg-1)*3, pg*3)
+      ).catch(() => []),
+
+      axios.get(
+        `https://www.lance.com.br/busca?q=${encodeURIComponent(palavrasChave)}`,
+        { headers, timeout: 8000 }
+      ).then(r => {
+        // Extrai links que contenham as palavras-chave na URL (mais relevantes)
+        const todosLinks = [...new Set(
+          (r.data.match(/href="(https:\/\/www\.lance\.com\.br\/[^"]+\.html)"/gi) || [])
           .map(m => m.replace(/href="/,'').replace(/"$/,''))
-          .filter(l => !l.includes('/busca') && !l.includes('/tag/') && !l.includes('/autor/')))]
-          .slice((pg-1)*3, pg*3)
-        ).catch(() => [])
+          .filter(l => !l.includes('/busca') && !l.includes('/tag/') &&
+                       !l.includes('/autor/') && !l.includes('onde-assistir') &&
+                       !l.includes('jogos-de-hoje'))
+        )];
+        // Prioriza links que contenham palavras do título
+        const kws = palavrasChave.toLowerCase().split(' ');
+        const relevantes = todosLinks.filter(l =>
+          kws.some(kw => l.toLowerCase().includes(kw))
+        );
+        const resto = todosLinks.filter(l =>
+          !kws.some(kw => l.toLowerCase().includes(kw))
+        );
+        return [...relevantes, ...resto].slice((pg-1)*3, pg*3);
+      }).catch(() => [])
     ]);
 
     const todosLinks = [];
@@ -264,15 +298,21 @@ app.get('/buscar-fotos', async (req, res) => {
     }
 
     if (todosLinks.length) {
-      const fotosRaw = await Promise.allSettled(todosLinks.map(link =>
-        axios.get(link, { headers, timeout: 6000 }).then(r => {
-          const m1 = r.data.match(/name="twitter:image"\s+content="([^"]+)"/);
-          const m2 = r.data.match(/property="og:image"\s+content="([^"]+)"/);
-          const foto = m1?.[1] || m2?.[1];
-          return (foto && foto.startsWith('http') && !foto.includes('logo') && !foto.includes('favicon')) ? foto : null;
-        }).catch(() => null)
-      ));
-      const fotos = fotosRaw.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+      const fotosRaw = await Promise.allSettled(
+        todosLinks.map(link =>
+          axios.get(link, { headers, timeout: 6000 }).then(r => {
+            const m1 = r.data.match(/name="twitter:image"\s+content="([^"]+)"/);
+            const m2 = r.data.match(/property="og:image"\s+content="([^"]+)"/);
+            const foto = m1?.[1] || m2?.[1];
+            return (foto && foto.startsWith('http') &&
+                    !foto.includes('logo') && !foto.includes('favicon')) ? foto : null;
+          }).catch(() => null)
+        )
+      );
+      const fotos = fotosRaw
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => r.value);
+
       if (fotos.length > 0) {
         return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'portais' });
       }
