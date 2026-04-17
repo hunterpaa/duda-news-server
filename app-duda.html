@@ -4,235 +4,367 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Tanaka News: Edição Shinobi 🌸</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<title>Tanaka News 🌸</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
+/* ── RESETS E VARIÁVEIS ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  /* Paleta Sakura & Lavanda */
-  --bg-sakura: #FFF5F7;
-  --sakura-pink: #FFB7C5; /* Rosa Cerejeira */
-  --sakura-dark: #D44D7D;
-  --lavender: #E0BBE4;
-  --lavender-dark: #957DAD;
-  --white: #FFFFFF;
-  --text: #4A4A4A;
+  /* Paleta Sakura & Lavanda Suave */
+  --bg-sakura: #FFF9FA; /* Off-white Sakura */
+  --card-color: #FFFFFF;
+  --text-main: #4A5568; /* Cinza suave */
+  --text-sub: #718096;
+  --primary: #D44D7D; /* Rosa Sakura Escuro */
+  --primary-light: #FFB7C5; /* Rosa Sakura Claro */
+  --accent: #E0BBE4; /* Lavanda Suave */
+  --accent-dark: #957DAD;
+  
+  /* Estilos */
   --radius: 20px;
+  --radius-sm: 12px;
   --shadow: 0 8px 20px rgba(212, 77, 125, 0.1);
+  --btn-h: 48px; /* Botões menores para desktop */
+  --input-h: 48px;
 }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: 'Poppins', sans-serif; background: var(--bg-sakura); color: var(--text-main); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Poppins', sans-serif; background: var(--bg-sakura); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
-
-/* ── HEADER NINJA ── */
-.header {
-  background: linear-gradient(135deg, var(--sakura-pink), var(--lavender));
-  padding: 30px 20px;
-  text-align: center;
-  border-radius: 0 0 40px 40px;
+/* ── HEADER SLIM NINJA ── */
+.header-bar {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent) 100%);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Texto na esquerda, tabs no centro */
+  position: sticky; top: 0; z-index: 100;
+  border-radius: 0 0 30px 30px;
   box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
 }
-.header h1 { color: white; font-size: 26px; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-.header p { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+/* Sleeping Kurama Bebê */
+.mascote-kurama { width: 60px; height: 60px; object-fit: contain; }
+.header-texts h1 { font-size: 20px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+.header-texts p { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 1px; text-transform: uppercase; }
 
-/* Mascote flutuante no topo (Kyubi Bebê) */
-.kyubi-top {
-  position: absolute;
-  right: -10px;
-  bottom: -10px;
-  width: 80px;
-  opacity: 0.8;
-}
-
-/* ── NAVEGAÇÃO (TABS) ── */
-.tabs { display: flex; gap: 10px; padding: 20px; max-width: 600px; margin: 0 auto; }
+/* TABS CENTRALIZADAS E ELEGANTES */
+.tabs { display: flex; gap: 12px; justify-content: center; }
 .tab {
-  flex: 1; padding: 12px; border: none; border-radius: 15px;
-  background: white; color: var(--sakura-dark); font-weight: 700;
-  box-shadow: var(--shadow); cursor: pointer; transition: 0.3s;
+  height: 40px; padding: 0 16px; font-size: 14px;
+  cursor: pointer; border: 2px solid white;
+  background: white; color: var(--primary);
+  border-radius: 20px; font-family: inherit; font-weight: 600;
+  transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;
 }
-.tab.active { background: var(--sakura-dark); color: white; }
+.tab.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-/* ── CARDS ── */
-.container { max-width: 500px; margin: 0 auto; padding: 0 20px; }
+/* ── APP CONTAINER E GRID RESPONSIVO (PC) ── */
+.app { max-width: 900px; margin: 1.5rem auto; padding: 0 1.5rem; padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+
+/* Grid para PC: 2 colunas para os passos 1 e 2 */
+.step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+
+/* ── CARDS MODERNOS-KAWAII ── */
 .card {
-  background: white; border-radius: var(--radius); padding: 25px;
-  margin-bottom: 25px; box-shadow: var(--shadow); position: relative;
-  border: 2px solid rgba(255, 183, 197, 0.3);
+  background: var(--card-color);
+  border: 1px solid rgba(255, 183, 197, 0.3); /* Borda Sakura sutil */
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+  position: relative;
 }
-.step-title { color: var(--sakura-dark); font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-.japanese-title { font-size: 10px; text-transform: uppercase; color: var(--lavender-dark); display: block; }
+.card-japanese { font-size: 10px; color: var(--accent-dark); text-transform: uppercase; margin-bottom: 3px; display: block; }
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 1.25rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
 
-/* ── BICHINHOS DO NARUTO (GIFS) ── */
-.mascote-gif { width: 60px; height: 60px; object-fit: contain; }
-.loading-box { text-align: center; padding: 20px; }
-.loading-kurama { width: 100px; animation: pulse 1.5s infinite; }
-
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
-/* ── FORMULÁRIOS ── */
-input, textarea, select {
-  width: 100%; padding: 15px; border-radius: 15px;
-  border: 2px solid var(--bg-sakura); background: #FFF9FA;
-  font-family: 'Inter', sans-serif; font-size: 15px; margin-top: 8px;
-  transition: 0.3s;
-}
-input:focus { outline: none; border-color: var(--sakura-pink); background: white; }
-
-/* ── BOTÕES JUTSU ── */
-.btn-jutsu {
-  width: 100%; padding: 18px; border: none; border-radius: 50px;
-  background: linear-gradient(to right, var(--sakura-dark), var(--lavender-dark));
-  color: white; font-weight: 700; font-size: 16px; cursor: pointer;
-  box-shadow: 0 4px 15px rgba(212, 77, 125, 0.3); transition: 0.3s;
-  margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.btn-jutsu:active { transform: scale(0.95); }
-.btn-jutsu:disabled { background: #CCC; opacity: 0.6; }
-
-/* ── ITENS DE NOTÍCIA ── */
+/* ── NEWS LIST ── */
+.news-list { display: flex; flex-direction: column; gap: 10px; }
 .news-item {
-  background: #FFF9FA; padding: 15px; border-radius: 15px; margin-bottom: 12px;
-  border: 1px solid var(--sakura-pink); display: flex; justify-content: space-between; align-items: center;
+  display: flex; gap: 12px; align-items: center; padding: 10px;
+  border: 1px solid #E2E8F0; border-radius: var(--radius-sm);
+  background: white; transition: all 0.2s;
 }
-.news-title { font-size: 14px; font-weight: 600; color: #555; flex: 1; padding-right: 10px; }
+.news-item:hover { border-color: var(--accent); background: #FAF5FF; }
+.news-title { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-main); font-family: var(--font-sub); flex: 1; padding-right: 5px; }
 
-/* ── STATUS ── */
-.status-bubble {
-  padding: 12px; border-radius: 15px; font-size: 13px; margin-top: 15px;
-  display: flex; align-items: center; gap: 10px; font-weight: 500;
+/* ── BOTÕES JUTSU (TAMANHO PC) ── */
+.btn-jutsu {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--btn-h); padding: 0 18px; border-radius: 24px;
+  border: 2px solid #E2E8F0; background: white;
+  font-size: 15px; cursor: pointer; font-family: inherit; font-weight: 600;
+  color: var(--text-main); transition: all 0.2s; -webkit-tap-highlight-color: transparent;
 }
-.status-success { background: #E7F9ED; color: #2D6A4F; border: 1px solid #95D5B2; }
-.status-error { background: #FFF0F0; color: #A4161A; border: 1px solid #FFB3B3; }
+.btn-jutsu:active { transform: scale(0.97); }
+.btn-jutsu.primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white; border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(212, 77, 125, 0.2);
+}
+.btn-jutsu.purple { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-jutsu.small { height: 36px; padding: 0 12px; font-size: 13px; border-radius: 18px; gap: 4px; }
+.btn-jutsu:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Sugestão de nome */
-.sugestao { font-size: 11px; background: var(--lavender); color: white; padding: 4px 10px; border-radius: 10px; cursor: pointer; display: inline-block; margin-top: 5px; }
+.btn-row { display: flex; gap: 10px; margin-top: 1.25rem; }
 
+/* ── CAMPOS DE INPUT FOFOS ── */
+.field { margin-bottom: 1rem; }
+label { font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 5px; font-weight: 600; }
+input[type=text], input[type=url], textarea, select {
+  width: 100%; height: var(--input-h);
+  border: 2px solid #E2E8F0; border-radius: var(--radius-sm);
+  padding: 0 12px; font-size: 15px; font-family: var(--font-sub);
+  background: white; transition: border-color 0.2s;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+textarea { padding: 12px; min-height: 200px; resize: vertical; line-height: 1.6; }
+
+/* ── BICHINHOS INLINE (SVG/BASE64) ── */
+/* Gamakichi */
+.sapinho-news { width: 30px; height: 30px; }
+/* Pakkun dando joinha */
+.pakkun-corner { width: 70px; height: 70px; position: absolute; bottom: 1.25rem; right: 1.25rem; opacity: 0.9; }
+/* Tonton com lupa */
+.tonton-foto { width: 60px; height: 60px; position: absolute; top: 1.25rem; right: 1.25rem; opacity: 0.8; }
+/* Scroll Final */
+.scroll-kansei { width: 100px; margin: 0 auto; display: block; }
+
+/* ── PASSO 3: FOTO MODERNO ── */
+.foto-input-box { background: #F0F7FF; border: 2px solid #BEE3F8; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1rem; }
+.foto-input-box label { color: #3182CE; }
+.foto-input-box input { border-color: #BEE3F8; }
+/* Preview Foto com borda Sakura */
+#foto-preview-manual img { max-width: 100%; max-height: 200px; border-radius: var(--radius-sm); border: 3px solid var(--primary-light); box-shadow: var(--shadow); }
+
+/* Nome Foto com Auto-nome */
+.nome-foto-box { background: #FFFBEB; border: 2px solid #F6E05E; border-radius: var(--radius-sm); padding: 1rem; }
+.nome-foto-box label { color: #B7791F; }
+.sugestao-label { font-size: 11px; background: #FEFCBF; color: #B7791F; padding: 4px 10px; border-radius: 12px; cursor: pointer; display: inline-block; margin-top: 5px; }
+
+/* Final Card */
+.kansei-hint { background: #FAF5FF; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 1rem; font-size: 14px; color: var(--accent-dark); line-height: 1.6; text-align: center; font-family: var(--font-sub); }
+
+/* ── UTILITÁRIOS ── */
+.divider { border: none; border-top: 2px dashed #E2E8F0; margin: 1.25rem 0; }
+.url-mono { font-size: 11px; font-family: monospace; background: #F7FAFC; padding: 8px 12px; border-radius: 8px; color: var(--text-sub); word-break: break-all; border: 1px solid #E2E8F0; }
+.status { padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 1rem; font-weight: 500; font-family: var(--font-sub); display: flex; align-items: center; gap: 8px; }
+.status.success { background: #F0FFF4; color: #38A169; border: 1px solid #C6F6D5; }
+.status.error { background: #FFF5F5; color: #E53E3E; border: 1px solid #FED7D7; }
 </style>
 </head>
 <body>
 
-<div class="header">
-    <img src="https://i.pinimg.com/originals/f6/4a/0b/f64a0b63b96646549a888a70566378e9.png" class="kyubi-top" alt="Kyubi">
-    <p>SECRETARIA DA VILA DA FOLHA</p>
-    <h1>Tanaka News 🌸</h1>
-    <p>Edição Especial para Duda-chan</p>
+<div class="header-bar">
+  <div class="header-left">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6OW0cAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEiUlEQVR4nO2by08bRxSHv9ndtbEJkBhTSE0pUlMlpEmVUl5RqkipSkV9VCrqSqnUoq5b0q5bWfRP6K77b9RWqiI+CiqVqqQqRSrUqiAtKZCqQYwX8bCx1/eYwQUbE5AxbvAxfK9msfHszDkzZ757zzO7wP/AIszCIszCHqY/F/h/WfT8Nq5B//5r6zR8K4B198K3AVh3Bf4O8K5z/P9EwH6h4XF1Yp64+hDqM50h/39r0Bf0p+wF/HjC48rYPGPr+U17wOPr4AnvV4Z4V6GvB52g671X6SvoW0An1KFrC//O5VlYhFnYwwr4YfpwK731f4fA+XG6vX/D9xP4A6DTu5Gf+73p8W6mB4A//B3bT4PehbSBNhD+/pS9+94L6mS6/98h/L6G72Z6Xf5O4O4X34F99X8HwI/Tp8u7vS9f+M/+XhXfPvp6490P2jK+ffS1xtvffYJqB/WwB+VbQNXG94CqA9V8eU269f8vobv49hNf//bS838X3yq+V4N9eXGOf+6P16S3+O4b8f35YOf8vU5f2UuN/N8Tfjfx7Y9vH94S/m0f+NlB74fvebCvf8bW96vG+6v5vIrv3wOqDrRifOfAt5f4N4A60GqwvIq//2N0jP+/Lbw76XUvXgK6F7fT98/956Xv/XbYh+7F7/vP/54f9j59Yf/r/v2p/b8P34L+/fH9BfrCof5vBv0QfR9I6W+Hfuj+eB88D6j74B54N+j773tP6H0wO6D7/tBv0f055zUOfCeh+wGf3/dG1/f99N/6I66X4G2/8L4B/wPq3oXvXngXvN9HwBfoC50GvYteN3h+H/2D/P+76HcH/g5415nuvof+/f//Nvp6XvT1u/C297jH8X9G4E6m757b3XvOda8z3XvOda8Z+O+D9/v4O6A7+fv3Y9f5O6A7+TvnvL6fP9E48B0EvhOD+f6h90Rjft+Jfvpv46Tf0fXdR98987bL5/f76PvnvE5/N3Ome865Xm8w5/U7/c65Xm/G38GMc55X/X6PvtG4Y/Q5ffSNo9f5fSfa77uP6/v5X+V7A6h7A+mD7gP93wD6XpA/5PtAv5u+v+f2vSfc3vfG+5pAr8G/AfS6Q6/5O6CP0K9F//5m4P9W4Gv5XqYfAb0OfwD4X6EPNfT/EP8L4L8V9At0HwD/Luhv4b8N/HcB/9fwvQreBfgf4X/EP9v5f0TfLvi8//d8+3A7P9C7kN4X6N3M+O7A+2N9H6D/u0O+94G//r4e9IPD+j5U8+UNpG7j3wSqNn4XqLpB1b3+XqffCPr+E8fI/w35/v839HvA9Y//7fBvBv0X4N/EnwHeZ8B/YjA48H0PfPuZfvS+55n2mQ77/T7H9zv4d/B73X6vO/jd4D/h+4TvebBvGfXtwv+A//wN+A8O5/fH++PfD3XfX/H+Xfh+v4+pX/E39T4P9ZlOmL5565tXmPp+Nfx/mP4P66vDfwAAAABJRU5ErkJggg==" class="mascote-kurama" alt="Kurama Bebê">
+    <div class="header-texts">
+      <h1>Tanaka News</h1>
+      <p>Redação esportiva da Duda 🌸</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('publicar')">📜 Missões (Relatórios)</button>
+    <button class="tab" onclick="switchTab('config')">⚙️ Gama-chan (Config)</button>
+  </div>
 </div>
 
-<div class="tabs">
-    <button class="tab active" onclick="switchTab('publicar')">📜 Missões</button>
-    <button class="tab" onclick="switchTab('config')">⚙️ Gama-chan</button>
-</div>
-
-<div class="container" id="tab-publicar">
-    
-    <div class="card" id="step1">
-        <div class="step-title">
-            <img src="https://media.tenor.com/D8aA308B_dIAAAAi/naruto-frog.gif" class="mascote-gif" alt="Gama">
-            <div>
-                <span class="japanese-title">Kuchiyose no Jutsu</span>
-                Invocação de Notícias
-            </div>
+<div class="app">
+  <div id="tab-publicar">
+    <div class="step-grid">
+      
+      <div class="card" id="step1">
+        <span class="card-japanese">Kuchiyose no Jutsu</span>
+        <div class="card-title">
+          <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIzMHB4IiBoZWlnaHQ9IjMwcHgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNDMgNDRWNDJDNDMgNDAuODk1NCA0Mi4xMDQ2IDQwIDQxIDQwSDM3QzM1Ljg5NTQgNDAgMzUgNDAuODk1NCAzNSA0MlY0NEgzNVY0MkMzNSA0MC44OTU0IDM0LjEwNDYgNDAgMzMgNDBIMzdIMzMzQzMzIDQwLjg5NTQgMzIuMTA0NiA0MCAzMSA0MFgyM0MyMS44OTU0IDQwIDIxIDQwLjg5NTQgMjEgNDJWNDRIMjFWNDJDMjEgNDAuODk1NCAyMC4xMDQ2IDQwIDE5IDQwSDIzQzIzIDQwLjg5NTQgMjIuMTA0NiA0MCAyMSA0MEgxOUwxNS40IDMzLjFMMTIuNjQzNCAzMi40Mzg0QzExLjU5OTUgMzIuMTY3IDEwLjgyMTUgMzEuMzA1NiAxMC41NzYyIDMwLjE1NTNMMTAuNjc4NyAzMC4wNTg4TDEzLjA0MjQgMjcuNTg2MkwxMS44OTI2IDI2LjM4N0wxMC4wNzkxIDI4LjI5MTFDOS45OTc1NCAyOC40MDI4IDkuOTE5NTIgMjguNTA2NiA5Ljg0MDI5IDI4LjYwNjVMMTAuNjc4NyAzMC4wNTg4TDEwLjU3NjIgMzAuMTU1M0MxMC4yNzExIDMxLjA0OTQgOS44NTcxOCAzMS42Mzc2IDkuMDgxNzYgMzEuNzc4Mkw3Ljg5MjkxIDMzLjFMMTEuNDI3OCAzOC40Mjg4TDguNzYyMTMgNDEuODczN0M4LjIwMDYgNDIuNjU0NSA4LjE2NDIyIDQzLjcyNDMgOC42NDc4OCA0NC42MzY1QzkuMDY2MTYgNDUuNDEyNSA5Ljg5MTM4IDQ2IDEwLjc3OTMgNDZIMzcuMjIwN0MzOC4xMDg2IDQ2IDM4LjkzMzkgNDUuNDEyNSAzOS4zNTIzIDQ0LjYzNjVDMzkuODM1OCA0My43MjQzIDM5Ljc5OTQgNDIuNjU0NSAzOS4yMzc5IDQxLjg3MzdMMzYuNTczMSAzOC40Mjg4TDQzIDQ0Wk04Ljc2MjEzIDQxLjg3MzdMMTEuNDI3OCAzOC40Mjg4TDE0IDQxTDExLjQyNzggMzguNDI4OEwxNC42Njk4IDMzLjFNMzYuNTczMSAzOC40Mjg4TDM5LjIzNzkgNDEuODczN0wzNCA0MUwzNi41NzMxIDgxLjg3MzdMMzIuNzMwNiAzMy4xTTEyIDMwVjI4QzEyIDI2Ljg5NTQgMTIuODk1NCAyNiAxNCAyNkgzNEMzNS4xMDQ2IDI2IDM2IDI2Ljg5NTQgMzYgMjhWMzBaTTEyIDIwVjE4QzEyIDE2Ljg5NTQgMTIuODk1NCAxNiAxNCAxNkgzNEMzNS4xMDQ2IDE2IDM2IDE2Ljg5NTQgMzYgMThWMjBaTTEyIDEwVjhDMTIgNi44OTU0IDEyLjg5NTQgNiAxNCA2SDM0QzM1LjEwNDYgNiAzNiA2Ljg5NTQgMzYgOFYxMFpNMTEuNDI3OCAzOC40Mjg4TDE0IDQxTDE1LjQgMzQuMUw4Ljc2MjEzIDQxLjg3MzdMMTEuNDI3OCAzOC40Mjg4Wk0zNi41NzMxIDM4LjQyODhMMzUuMjY5NCAzNC4xTDM0IDQxTDM2LjU3MzEgMzguNDI4OFoiIGZpbGw9IiNENDREOEQiLz48L3N2Zz4=" class="sapinho-news" alt="Sapinho">
+          Invocação de Notícias (Estadão)
         </div>
         
-        <div id="news-list">
-            <div style="text-align:center; color:#999; padding:20px;">Pronta para a próxima missão?</div>
+        <div class="news-list" id="news-list">
+          <div style="font-size:14px;color:var(--text-sub);padding:24px 0;text-align:center;font-family:var(--font-sub);">
+            Clique em 'Invocação' para carregar as matérias mais recentes! 🐸
+          </div>
         </div>
-
-        <button class="btn-jutsu" onclick="buscarMaterias()" id="btn-buscar">
-            ✨ Concentrar Chakra (Buscar)
+        <div id="s1-status" class="status" style="display:none"></div>
+        <button class="btn-jutsu primary" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1.5rem;width:auto;">
+          ⚡ Kuchiyose no Jutsu (Invocação)
         </button>
-        <div id="s1-status" class="status-bubble" style="display:none"></div>
+        <span id="buscar-hint"></span>
+      </div>
+
+      <div class="card" id="step2" style="display:none">
+        <span class="card-japanese">Chunin Shiken</span>
+        <div class="card-title">Relato da Missão (Revisão)</div>
+        
+        <img src="data:image/png;base64,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" class="pakkun-corner" alt="Pakkun OK">
+      </div>
     </div>
 
-    <div class="card" id="step2" style="display:none">
-        <div class="step-title">
-            <img src="https://media.tenor.com/L1L_6vE0B6IAAAAi/pakkun-naruto.gif" class="mascote-gif" alt="Pakkun">
-            <div>
-                <span class="japanese-title">Chunin Shiken</span>
-                Revisão Ninja
-            </div>
-        </div>
+    <div class="step-grid" style="margin-top:1.5rem;">
+      <div class="card" id="step3" style="display:none;grid-column: 1 / -1;">
+        <span class="card-japanese">Gazo no Jutsu</span>
+        <div class="card-title">Invocação da Foto (Ninpo)</div>
         
-        <label>Chapéu da Vila</label>
-        <select id="edit-chapeu">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAABy/m9vAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFHUlEQVRYhN2XaU8bRxSGH+eeuWbHxhhSCAkkNlREUloppUhUqlSKqkpFfVQqatOqqlKLuqq6Kip+gnbVf6O2Sqs+CiqlSokUKSotUpYWE5YEE8TYXmPHmNf3uEFjAtImbXCBX//szHhz5sw5z3veMzuAL5nNAnvIDvKCE//4W9nM//rXNpn/bxb2S6b/vybgl6b/n5uBPe//3Z1M9b+/6wR/C74Lp9u7vN/N7AL/Dvx7mPXfgXd/p3Y7vS9f+M/+XhXfPvp644H/26Ab/Dv4v3Xv9f//Dvz774D3GfAfHPp+B+7v/55nH7oXf//v/66f9/v9Z9f3//9LwO+H/wj4Xwz6BfrCoX6vBv0QfB9C/4S6f9UfBnrdf//wT6P//X8fX/r6v/vBf33f67vX/77f7f9XwX8M6M7/f/0GfX+4/o343vX693/D7+j/fv8b3X5H//fD//B+mOn//B3Xn3Fdx99/1+/6h/v/+5r7XmfdM+/X977p+p7L++50fffnXG8w5/v76/+YfYeeK9Xb63X6r/+5TnvXO7vOdfu//X5/N6N9u9+/U+XfxYxjvXv/9fO/5V+f309/p9fV1/vH9/P+Puj+N37pP9f3mvd6/+tz/f///h+fD5zX9/T/N6m/P/f+X/jOq/eE57v/wL5v7HvvH75mMP4f/78u9F+994bOOed9/X+u/wf//iPw7n/9P3zeD94X8X8K7An6/rPrAen3f4A+CHX38L8B9MPfL9H9EHQv/E7Yf0LfnfXvBfVD79p1f/jv/v0WvN8P9T5898L3+53f//p/8X/7v2PfvXfO+/927nffNf/pXbX//A+fd/65Xj8X//4b9L+C/wO+u8F7b+DfvW7fM2/f+x//U39v4Hff//R6r//633P//t7X/4b+b+i5UncOvxP+HfhfDfx7wHcy//9u+E6ov8v3f3f/H8P/I/p2wL4Z3g2f7//h7/r/f/Gf3p/2/78f9n6Y9/0VfP/U//C5S3//H+K/F+p+95/qfv6P/w4Mpj/X/R79j35H13cf//v/zof+Xf/vHfy9Tffw+uH3w39G/17w3X+u7z44B74V8O5/w+/+P0HXe/8+ePff8HsdXof/OfBd//+n56XvPfXwfx78917//57f3fvPdd//B+B/5fdd8P/OfM77PfSeeY/7XuffpOfP8O/67v//E/C+An8P7m+/D/w9uL9997V+C+m9gfdBqPeEPwZ9pvd9+Ofp85z36//z//Y/772B/77v98B/D4P7z/6b+I/4G4V9w9vS+z7UZ3rX7/e77/f7Xfd6vxv5v5/3953of5u+/06on/F7T7j+wPuM+16n/+7/u96//S7/7f8f9Pfz/v6O3t+u1/uO3uNf37bovY7//Sfo/o5eP/v+HwFvP+//Pq4/36nfv+X13W/0n0bfOfX+55nX+Y77N87pD8O/Ad7pD/32fX94v4//V3wvg/f/UvDfg799fC8D/yX+Bf+NwaDve7D//N/63w//3//+D7//N/D9Fv7X/xvgPwH/e5596N/D/w54HwK94G+H++4/N+F/N7x//7X/X8H/f4O/4O/mff/V//v/AXx3wP/5p/Ff5W/4458f38Osn8e/Bff/f9X/7YDPv/8+dK438H/+w3//AX6vM6G/7z/fE//2//+D8/r///8B79L/+f+O//r/Ad69/+4/of8M/H//4/N53uN5T/4b/f4P/9P/9v/f/Q8E/wPOf/xX/f//gP/9Bv//7/L9/38O+M/+9/+DfwN5r/O3P9fnfL99X/8Gfv7/A/6D/wb+f/xX/f8f9P6Xfh8YDPp//Vf+b+Yf/u8P5z/f5ff/GfgL/P//AfgW/N/4//7X/X+E/wH++wL/5///"); }
+.news-item { background: #FFF9FA; border: 1px solid var(--sakura-pink); }
+.news-title { color: #555; }
+.btn-jutsu.primary {
+  background: linear-gradient(135deg, var(--primary), #FFD1DC);
+  box-shadow: 0 4px 10px rgba(212, 77, 125, 0.2);
+}
+.btn-jutsu.purple { background: var(--accent); }
+/* Form fields */
+input, select, textarea {
+  border: 2px solid #E2E8F0; background: #FFF9FA;
+}
+input:focus, textarea:focus { border-color: var(--accent); }
+/* Photo/auto-nome styles */
+.foto-input-box { background: #F0F7FF; border: 2px solid #BEE3F8; }
+.foto-input-box label { color: #3182CE; }
+#foto-preview-manual img { border: 3px solid var(--primary-light); box-shadow: var(--shadow); }
+.nome-foto-box { background: #FFFBEB; border: 2px solid #F6E05E; }
+.nome-foto-box label { color: #B7791F; }
+.sugestao-label { background: #FEFCBF; color: #B7791F; }
+/* Final card hint */
+.kansei-hint { background: #FAF5FF; border: 2px solid var(--accent); color: var(--accent-dark); }
+/* Status */
+.status.success { background: #F0FFF4; color: #38A169; border: 1px solid #C6F6D5; }
+.status.error { background: #FFF0F0; color: #E53E3E; border: 1px solid #FED7D7; }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="header-left">
+    <svg class="mascote-kurama" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M54 36c0 9.941-8.059 18-18 18S18 45.941 18 36s8.059-18 18-18 18 8.059 18 18Zm-18 14c7.732 0 14-6.268 14-14s-6.268-14-14-14-14 6.268-14 14 6.268 14 14 14Z" fill="#D44D7D"/><path d="M36 40c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4Zm0-6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" fill="#4A5568"/><path d="M46.818 28.182 39.545 32l7.273 3.818a2 2 0 1 1-1.818 3.545L36 34.727l-9 4.636a2 2 0 1 1-1.818-3.545l7.273-3.818-7.273-3.818a2 2 0 1 1 1.818-3.545l9 4.636 9-4.636a2 2 0 1 1 1.818 3.545ZM36 30.727l-6 3.091 6 3.091 6-3.091-6-3.091Z" fill="#D44D7D"/><path d="M51.05 44.5a3 3 0 1 0-4.1-4.1l-1.35 1.35 1.35 1.35 1.35 1.35Z" fill="#4A5568"/></g></svg>
+    <div class="header-texts">
+      <h1>Tanaka News</h1>
+      <p>Redação esportiva da Duda 🌸</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('publicar')">📜 Missões (Relatórios)</button>
+    <button class="tab" onclick="switchTab('config')">⚙️ Gama-chan (Config)</button>
+  </div>
+</div>
+
+<div class="app">
+  <div id="tab-publicar">
+    <div class="step-grid">
+      
+      <div class="card" id="step1">
+        <span class="card-japanese">Kuchiyose no Jutsu</span>
+        <div class="card-title">Invocação de Notícias (Estadão)</div>
+        
+        <div class="news-list" id="news-list">
+          <div style="font-size:14px;color:var(--text-sub);padding:24px 0;text-align:center;font-family:var(--font-sub);">
+            Clique em 'Invocação' para carregar as matérias mais recentes! 🐸
+          </div>
+        </div>
+        <div id="s1-status" class="status" style="display:none"></div>
+        <button class="btn-jutsu primary" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1.5rem;width:auto;">
+          ⚡ Kuchiyose no Jutsu (Invocação)
+        </button>
+        <span id="buscar-hint"></span>
+      </div>
+
+      <div class="card" id="step2" style="display:none">
+        <span class="card-japanese">Chunin Shiken</span>
+        <div class="card-title">Relato da Missão (Revisão)</div>
+        
+        <div class="field">
+          <label>Chapéu da Vila</label>
+          <select id="edit-chapeu">
             <option value="Futebol">Futebol ⚽</option>
             <option value="Basquete">Basquete 🏀</option>
             <option value="Outros">Outros 🍥</option>
-        </select>
-
-        <label>Título do Pergaminho</label>
-        <input type="text" id="edit-titulo">
-
-        <label>Relato da Missão (Texto)</label>
-        <textarea id="edit-texto" rows="8"></textarea>
-        
-        <button class="btn-jutsu" onclick="goStep3()">Próximo: Jutsu de Imagem 📸</button>
-        <button class="btn-jutsu" style="background:#EEE; color:#888; margin-top:10px;" onclick="goStep1()">Voltar</button>
+          </select>
+        </div>
+        <div class="field">
+          <label>Título do Pergaminho</label>
+          <input type="text" id="edit-titulo" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Texto completo (Relatório)</label>
+          <textarea id="edit-texto" rows="10" oninput="updateCount()"></textarea>
+          <div class="char-count" id="char-count">0 caracteres</div>
+        </div>
+        <div id="s2-status" class="status" style="display:none"></div>
+        <div class="btn-row">
+          <button class="btn-jutsu primary" onclick="goStep3()">Próximo: Foto 📸 →</button>
+          <button class="btn-jutsu" onclick="goStep1()">← Voltar</button>
+        </div>
+        <svg class="pakkun-corner" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M50.414 43.586a10 10 0 1 1 14.142 14.142 10 10 0 0 1-14.142-14.142Z" fill="#FFB7C5"/><path d="M57.485 50.657a10 10 0 1 1 14.142 14.142 10 10 0 0 1-14.142-14.142Zm7.071 7.071a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" fill="#4A5568"/><path d="M60.657 53.828a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" fill="#D44D7D"/><path d="M28 50V20C28 8.954 19.046 0 8 0S-12 8.954-12 20v30C-12 61.046-3.046 70 8 70s20-8.954 20-20ZM8 62c-6.627 0-12-5.373-12-12V20c0-6.627 5.373-12 12-12s12 5.373 12 12v30c0 6.627-5.373 12-12 12Z" fill="#4A5568"/><path d="M8 20a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm0 2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" fill="#D44D7D"/><path d="M8 12V4C8 1.791 6.209 0 4 0S0 1.791 0 4v8c0 2.209 1.791 4 4 4s4-1.791 4-4Z" fill="#4A5568"/></g></svg>
+      </div>
     </div>
 
     <div class="card" id="step3" style="display:none">
-        <div class="step-title">
-            <img src="https://media.tenor.com/n6o2D-Z3DYoAAAAi/kurama-naruto.gif" class="mascote-gif" alt="Kyubi">
-            <div>
-                <span class="japanese-title">Gazo no Jutsu</span>
-                Invocação da Foto
-            </div>
+      <span class="card-japanese">Gazo no Jutsu</span>
+      <div class="card-title">Invocação da Foto (Ninpo)</div>
+      
+      <svg class="tonton-foto" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M42 36c0 6.627-5.373 12-12 12s-12-5.373-12-12 5.373-12 12-12 12 5.373 12 12Z" fill="#FFB7C5"/><path d="M41.485 35.485a10 10 0 1 1 14.142 14.142 10 10 0 0 1-14.142-14.142Z" fill="#4A5568"/><path d="M48.556 42.556a10 10 0 1 1 14.142 14.142 10 10 0 0 1-14.142-14.142Zm7.071 7.071a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" fill="#D44D7D"/><path d="M51.728 45.728a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" fill="#E2E8F0"/><path d="M12 40c0-11.046 8.954-20 20-20s20 8.954 20 20-8.954 20-20 20-20-8.954-20-20Z" fill="#4A5568"/><path d="M12 36a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm0 2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" fill="#D44D7D"/><path d="M12 28v-8c0-2.209 1.791-4 4-4s4 1.791 4 4v8c0 2.209-1.791 4-4 4s-4-1.791-4-4Z" fill="#4A5568"/></g></svg>
+
+      <div class="btn-row" style="margin-bottom:1rem;">
+        <a id="btn-google-fotos" href="#" target="_blank" class="btn-jutsu purple" style="flex:1;">🔍 Abrir Google Imagens (Busca Ninja)</a>
+      </div>
+
+      <div class="foto-input-box">
+        <label>📎 Cole o endereço DIRETO da foto aqui:</label>
+        <input type="url" id="foto-url"
+          placeholder="Ex: https://site.com/foto.jpg"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          oninput="previewFotoUrl()" />
+        <div id="foto-preview-manual" style="display:none;margin-top:1.25rem;text-align:center;">
+          <img id="foto-img-manual" src="" alt="preview" referrerpolicy="no-referrer" />
         </div>
+      </div>
 
-        <p style="font-size:12px; color:#777; margin-bottom:10px;">Encontre a foto no Google, copie o endereço e cole aqui embaixo!</p>
-        
-        <a id="btn-google-fotos" href="#" target="_blank" class="btn-jutsu" style="background:#4A90E2;">🔍 Abrir Google Imagens</a>
+      <div class="nome-foto-box field">
+        <label>🏷️ Nome da foto no NextSite:</label>
+        <input type="text" id="foto-nome" placeholder="Ex: gremio-inter" autocomplete="off" />
+        <span class="sugestao-label" id="sugestao-nome" onclick="usarSugestao()">Auto-nome ✨</span>
+        <p class="nome-foto-hint">Esse nome ajuda a organizar. Toque na sugestão para usar.</p>
+      </div>
 
-        <input type="url" id="foto-url" placeholder="Cole o link da foto aqui..." oninput="previewFotoUrl()">
-        
-        <div id="foto-preview-manual" style="display:none; margin-top:15px; text-align:center;">
-            <img id="foto-img-manual" src="" style="max-width:100%; border-radius:15px; border:4px solid var(--sakura-pink);">
-        </div>
-
-        <div style="margin-top:15px;">
-            <label>Nome do Arquivo:</label>
-            <input type="text" id="foto-name-input">
-            <span class="sugestao" id="sugestao-label" onclick="usarSugestao()">Auto-nome ✨</span>
-        </div>
-
-        <button class="btn-jutsu" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>🚀 Enviar Foto para o Jornal</button>
-        <div id="foto-status" class="status-bubble" style="display:none"></div>
+      <div id="foto-upload-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn-jutsu primary" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>📤 Enviar Foto para a Vila →</button>
+        <button class="btn-jutsu" onclick="goStep2()">← Voltar</button>
+      </div>
     </div>
 
     <div class="card" id="step4" style="display:none">
-        <div class="step-title">
-            <img src="https://media.tenor.com/8-lAnk0W6z8AAAAi/tonton-naruto.gif" class="mascote-gif" alt="Tonton">
-            <div>
-                <span class="japanese-title">Kansei!</span>
-                Missão Cumprida!
-            </div>
-        </div>
-        
-        <div style="background:#FFF9FA; padding:15px; border-radius:15px; font-size:13px; color:#D44D7D; border: 1px dashed var(--sakura-pink);">
-            Tudo pronto! O texto já está na sua mão (copiado). Agora é só abrir o NextSite e deixar a mágica acontecer!
-        </div>
+      <span class="card-japanese">Kansei</span>
+      <div class="card-title">Missão Cumprida! (Publicar)</div>
+      
+      <svg class="scroll-kansei" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M90 50c0 22.091-17.909 40-40 40S10 72.091 10 50 27.909 10 50 10s40 17.909 40 40Zm-40 32c17.673 0 32-14.327 32-32S67.673 18 50 18 18 32.327 18 50s14.327 32 32 32Z" fill="#D44D7D"/><path d="M50 42a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm0 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" fill="#4A5568"/><path d="M50 34c2.209 0 4 1.791 4 4s-1.791 4-4 4-4-1.791-4-4 1.791-4 4-4Zm0-2a6 6 0 1 1 0 12 6 6 0 0 1 0-12ZM50 66c2.209 0 4 1.791 4 4s-1.791 4-4 4-4-1.791-4-4 1.791-4 4-4Zm0-2a6 6 0 1 1 0 12 6 6 0 0 1 0-12ZM38 50c0 2.209 1.791 4 4 4h16c2.209 0 4-1.791 4-4s-1.791-4-4-4H42a4 4 0 0 0-4 4Zm0-2a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6s0 4 0 4a6 6 0 0 1-6 6H42a6 6 0 0 1-6-6v-4Z" fill="#D44D7D"/></g></svg>
 
-        <button class="btn-jutsu" onclick="copiarEAbrir()" id="btn-publicar">🌸 Publicar no NextSite</button>
+      <div class="kansei-hint divider">
+        ✅ Relatório copiado! No NextSite: cole o título, cole o texto, selecione a foto e clique em publicar! 🎉
+      </div>
+      <div id="s4-status" class="status" style="display:none"></div>
+      <button class="btn-jutsu primary" onclick="copiarEAbrir()" id="btn-publicar" style="width:100%;margin-top:1.25rem;">🌸 Publicar no NextSite</button>
     </div>
+  </div>
 
-</div>
-
-<div class="container" id="tab-config" style="display:none">
+  <div id="tab-config" style="display:none">
     <div class="card" style="text-align:center;">
-        <img src="https://i.pinimg.com/originals/90/13/4e/90134e700769399478546b6276020557.png" style="width:120px;" alt="Gama-chan">
-        <div class="step-title" style="justify-content:center;">Gama-chan Wallet</div>
-        <p style="font-size:13px; color:#888;">Aqui cuidamos da conexão com o seu servidor no Render.</p>
-        
-        <div style="text-align:left; margin-top:20px;">
-            <label>Status do Chakra:</label>
-            <div id="cfg-status" class="status-bubble status-success">Servidor Online! 🟢</div>
-        </div>
-        
-        <button class="btn-jutsu" onclick="testarServidor()">Testar Conexão</button>
+      <span class="card-japanese">Gama-chan Wallet</span>
+      <div class="card-title" style="justify-content:center;">Configurações Ninja</div>
+      <p style="font-size:13px;color:var(--text-sub);">Aqui cuidamos da conexão com o seu servidor no Render.</p>
+      
+      <div class="divider"></div>
+      
+      <div class="field" style="text-align:left;">
+        <label>Status do Chakra:</label>
+        <div id="cfg-status" class="status success">🟢 Servidor Online!</div>
+      </div>
+      
+      <button class="btn-jutsu primary" onclick="testarServidor()">Testar Conexão Ninja</button>
     </div>
+  </div>
 </div>
 
 <script>
@@ -240,137 +372,181 @@ const SERVER = 'https://duda-news-server.onrender.com';
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
 
 function switchTab(t) {
-    document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
-    document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
-    document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1)));
+  document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
+  document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1))
+  );
 }
 
 function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  el.className = 'status ' + type;
+  el.innerHTML = msg;
+}
+function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
+
+function scrollToCard(id) {
+  setTimeout(() => {
     const el = document.getElementById(id);
-    el.style.display = 'flex';
-    el.className = 'status-bubble status-' + type;
-    el.innerHTML = msg;
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 
-// LOGICA DE BUSCA
+// INVOCAÇÃO
 async function buscarMaterias() {
-    const btn = document.getElementById('btn-buscar');
-    btn.disabled = true;
-    btn.innerHTML = '✨ Concentrando Chakra...';
-    showStatus('s1-status', 'success', '🌀 Invocando notícias do Estadão...');
-    
-    try {
-        const res = await fetch(`${SERVER}/materias`);
-        const data = await res.json();
-        if(data.ok) {
-            renderMaterias(data.materias);
-            document.getElementById('s1-status').style.display = 'none';
-        }
-    } catch(e) {
-        showStatus('s1-status', 'error', '❌ O Jutsu falhou! Tente novamente.');
+  const btn = document.getElementById('btn-buscar');
+  btn.disabled = true;
+  btn.innerHTML = 'Concentrando Chakra...';
+  showStatus('s1-status', 'success', '🌀 Invocando notícias do Estadão...');
+  document.getElementById('news-list').innerHTML = '';
+  try {
+    const res = await fetch(`${SERVER}/materias`);
+    const data = await res.json();
+    if(data.ok) {
+      renderMaterias(data.materias);
+      hideStatus('s1-status');
+    } else {
+      showStatus('s1-status', 'error', '❌ O Jutsu falhou! Nenhuma matéria encontrada.');
     }
-    btn.disabled = false;
-    btn.innerHTML = '✨ Concentrar Chakra (Buscar)';
+  } catch(e) {
+    showStatus('s1-status', 'error', '❌ O Jutsu falhou! Tente novamente.');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Kuchiyose no Jutsu (Invocação)';
 }
 
 function renderMaterias(lista) {
-    const container = document.getElementById('news-list');
-    container.innerHTML = '';
-    lista.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'news-item';
-        div.innerHTML = `<span class="news-title">${m.titulo}</span>
-                         <button class="tab active" style="padding:5px 15px; font-size:12px;" onclick="carregarMateria('${m.link}')">Abrir</button>`;
-        container.appendChild(div);
-    });
+  const container = document.getElementById('news-list');
+  container.innerHTML = '';
+  lista.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'news-item';
+    div.innerHTML = `<span class="news-title">${m.titulo}</span>
+                     <button class="btn-jutsu small primary" onclick="carregarMateria('${m.link}')">Abrir</button>`;
+    container.appendChild(div);
+  });
 }
 
 async function carregarMateria(url) {
-    showStatus('s1-status', 'success', '📖 Lendo pergaminho...');
-    try {
-        const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(url)}`);
-        const data = await res.json();
-        if(data.ok) {
-            document.getElementById('edit-titulo').value = data.titulo;
-            document.getElementById('edit-texto').value = data.texto;
-            document.getElementById('step1').style.display = 'none';
-            document.getElementById('step2').style.display = 'block';
-        }
-    } catch(e) { alert("Erro ao carregar!"); }
+  showStatus('s1-status', 'success', '📖 Lendo pergaminho de notícias...');
+  try {
+    const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    if(data.ok) {
+      document.getElementById('edit-titulo').value = data.titulo;
+      document.getElementById('edit-texto').value = data.texto;
+      updateCount();
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+      scrollToCard('step2');
+    } else {
+      showStatus('s1-status', 'error', '❌ Erro ao ler pergaminho.');
+    }
+  } catch(e) { showStatus('s1-status', 'error', '❌ Erro de conexão ninja.'); }
+}
+
+function goStep1() {
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step1').style.display = 'block';
+  scrollToCard('step1');
+}
+
+function goStep2() {
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+  scrollToCard('step2');
 }
 
 function goStep3() {
-    const titulo = document.getElementById('edit-titulo').value;
-    const sugestao = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().split('-').slice(0,3).join('-');
-    document.getElementById('sugestao-label').innerText = sugestao;
-    document.getElementById('foto-name-input').value = sugestao;
-    document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&tbm=isch`;
-    
-    document.getElementById('step2').style.display = 'none';
-    document.getElementById('step3').style.display = 'block';
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  if(!titulo || !texto) {
+    showStatus('s2-status', 'error', '❌ Complete o relatório antes de avançar!');
+    return;
+  }
+  hideStatus('s2-status');
+
+  const sugestao = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().split('-').slice(0,3).join('-');
+  document.getElementById('sugestao-nome').innerText = sugestao;
+  document.getElementById('foto-nome').value = sugestao;
+  document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&tbm=isch`;
+  
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'block';
+  scrollToCard('step3');
 }
 
 function previewFotoUrl() {
-    const url = document.getElementById('foto-url').value;
-    const img = document.getElementById('foto-img-manual');
-    if(url.length > 10) {
-        img.src = url;
-        document.getElementById('foto-preview-manual').style.display = 'block';
-        document.getElementById('btn-confirmar-foto').disabled = false;
-    }
+  const url = document.getElementById('foto-url').value.trim();
+  const img = document.getElementById('foto-img-manual');
+  if(url.length > 10) {
+    img.src = url;
+    document.getElementById('foto-preview-manual').style.display = 'block';
+    document.getElementById('btn-confirmar-foto').disabled = false;
+  } else {
+    document.getElementById('foto-preview-manual').style.display = 'none';
+    document.getElementById('btn-confirmar-foto').disabled = true;
+  }
 }
 
 async function confirmarFotoManual() {
-    const url = document.getElementById('foto-url').value;
-    const nome = document.getElementById('foto-name-input').value;
-    const titulo = document.getElementById('edit-titulo').value;
-    
-    showStatus('foto-status', 'success', '🕊️ Pakkun está levando a foto...');
-    
-    try {
-        const res = await fetch(`${SERVER}/upload-foto`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ fotoUrl: url, titulo: titulo, nomeFoto: nome })
-        });
-        const data = await res.json();
-        if(data.ok) {
-            showStatus('foto-status', 'success', '✅ Foto entregue na Vila!');
-            setTimeout(() => {
-                document.getElementById('step3').style.display = 'none';
-                document.getElementById('step4').style.display = 'block';
-            }, 1000);
-        }
-    } catch(e) { showStatus('foto-status', 'error', '❌ A foto se perdeu no caminho.'); }
+  const url = document.getElementById('foto-url').value.trim();
+  const nome = document.getElementById('foto-nome').value.trim();
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  
+  showStatus('foto-status', 'success', '🕊️ Pakkun está levando a foto para o jornal...');
+  
+  try {
+    const res = await fetch(`${SERVER}/upload-foto`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ fotoUrl: url, titulo: titulo, nomeFoto: nome })
+    });
+    const data = await res.json();
+    if(data.ok) {
+      showStatus('foto-status', 'success', '✅ Foto entregue na Vila com sucesso!');
+      setTimeout(() => {
+        document.getElementById('step3').style.display = 'none';
+        document.getElementById('step4').style.display = 'block';
+        scrollToCard('step4');
+      }, 1000);
+    } else {
+      showStatus('foto-status', 'error', '❌ A foto se perdeu no caminho.');
+    }
+  } catch(e) { showStatus('foto-status', 'error', '❌ Erro ninja de conexão.'); }
 }
 
 function copiarEAbrir() {
-    const titulo = document.getElementById('edit-titulo').value;
-    const texto = document.getElementById('edit-texto').value;
-    const chapeu = document.getElementById('edit-chapeu').value;
-    const fotoNome = document.getElementById('foto-name-input').value;
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  const chapeu = document.getElementById('edit-chapeu').value;
+  const fotoNome = document.getElementById('foto-nome').value.trim();
 
-    const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
-    const dados = btoa(unescape(encodeURIComponent(json)));
-    
-    navigator.clipboard.writeText(titulo + "\n\n" + texto);
-    window.open(NEXTSITE + '&tanaka=' + dados, '_blank');
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
+  const dados = btoa(unescape(encodeURIComponent(json)));
+  
+  navigator.clipboard.writeText(titulo + "\n\n" + texto);
+  window.open(NEXTSITE + '&tanaka=' + dados, '_blank');
 }
 
 function usarSugestao() {
-    document.getElementById('foto-name-input').value = document.getElementById('sugestao-label').innerText;
+  document.getElementById('foto-nome').value = document.getElementById('sugestao-nome').innerText;
 }
 
-function goStep1() { document.getElementById('step2').style.display='none'; document.getElementById('step1').style.display='block'; }
+function updateCount() {
+  document.getElementById('char-count').textContent = document.getElementById('edit-texto').value.length + ' caracteres';
+}
 
 async function testarServidor() {
-    try {
-        const res = await fetch(SERVER + '/');
-        const data = await res.json();
-        showStatus('cfg-status', 'success', '🟢 Servidor Ninja Online!');
-    } catch(e) { showStatus('cfg-status', 'error', '🔴 Servidor Offline.'); }
+  showStatus('cfg-status', 'success', '🌀 Concentrando chakra para testar...');
+  try {
+    const res = await fetch(SERVER + '/');
+    const data = await res.json();
+    showStatus('cfg-status', 'success', '🟢 Servidor Ninja Online!');
+  } catch(e) { showStatus('cfg-status', 'error', '🔴 Servidor Offline.'); }
 }
 </script>
-
 </body>
 </html>
