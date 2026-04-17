@@ -326,9 +326,7 @@ app.get('/buscar-fotos', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── UPLOAD DE FOTO ────────────────────────────────────────────────────────────
-// Legenda/nome gerados automaticamente a partir das palavras-chave do título.
-// Clean e curto — ex: "Flamengo Palmeiras Brasileirao"
-// O NextSite ordena por data de upload: mesmo nome duplicado, o mais recente aparece primeiro.
+// Gera legenda curta e descritiva via Claude antes de fazer o upload
 app.post('/upload-foto', async (req, res) => {
   const { fotoUrl, titulo } = req.body;
 
@@ -340,11 +338,32 @@ app.post('/upload-foto', async (req, res) => {
     return res.status(401).json({ ok: false, erro: 'Cookie de sessão não encontrado. Clique no favorito Tanaka Sports no NextSite primeiro!' });
   }
 
-  // Legenda curta = palavras-chave relevantes do título (mesmo algoritmo do buscar-fotos)
-  // Ex: "Flamengo Palmeiras Brasileirao" — aparece assim no jornal
-  const legendaCurta = extrairPalavrasChave(titulo);
+  // Gera legenda curta via Claude — ex: "Palmeiras e árbitros", "Torcida do Flamengo"
+  let legendaCurta = extrairPalavrasChave(titulo); // fallback
+  try {
+    const claudeRes = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 30,
+      messages: [{
+        role: 'user',
+        content: `Dado o título de uma notícia esportiva, crie uma legenda curta de foto (máximo 5 palavras) que descreva o que provavelmente aparece na foto. Seja direto e descritivo, como: "Palmeiras e árbitros", "Torcida do Flamengo", "Estádio do Corinthians", "Jogadores do Santos". Responda APENAS com a legenda, sem ponto final, sem aspas.\n\nTítulo: ${titulo}`
+      }]
+    }, {
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      timeout: 8000
+    });
+    const legenda = claudeRes.data?.content?.[0]?.text?.trim();
+    if (legenda && legenda.length > 2 && legenda.length < 60) {
+      legendaCurta = legenda;
+    }
+  } catch(e) {
+    console.log('Claude legenda falhou, usando fallback:', e.message);
+  }
 
-  // Nome do arquivo = slug da legenda curta — simples e limpo
   const nomeSlug = legendaCurta
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s-]/g, '')
@@ -367,9 +386,9 @@ app.post('/upload-foto', async (req, res) => {
     form.append('files[]', Buffer.from(imgResponse.data), { filename: nomeArquivo, contentType });
     form.append('parent_wda[0]', '6');
     form.append('empresa', '1');
-    form.append('titulo_wda[0]', legendaCurta);    // legenda curta — aparece no jornal
+    form.append('titulo_wda[0]', legendaCurta);   // legenda curta gerada pela IA
     form.append('credito_wda[0]', 'Estadão Conteúdo');
-    form.append('descricao_wda[0]', titulo);        // título completo na descrição
+    form.append('descricao_wda[0]', titulo);
     form.append('keyword_wda[0]', '');
     form.append('transparencia_wda[0]', '0');
     form.append('publica[0]', '1');
