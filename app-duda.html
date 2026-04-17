@@ -652,22 +652,21 @@ async function copiarEAbrir() {
   const titulo = document.getElementById('edit-titulo').value.trim();
   const texto = document.getElementById('edit-texto').value.trim();
   const chapeu = document.getElementById('edit-chapeu').value;
-  const fotoNome = document.getElementById('foto-nome').value.trim(); // <-- PEGA O NOME DA FOTO
+  const fotoNome = document.getElementById('foto-nome').value.trim(); // <-- Importante!
 
   try { 
     await navigator.clipboard.writeText(titulo + '\n\n' + texto); 
   } catch(e) {}
 
-  // ADICIONAMOS O fotoNome NO OBJETO QUE VAI PARA O FAVORITO
+  // Enviando o fotoNome junto com o restante dos dados
   const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
-  
   const dados = btoa(unescape(encodeURIComponent(json)));
   const url = NEXTSITE + '&tanaka=' + dados;
   
   const linkAtual = document.getElementById('edit-titulo')._link || '';
   if (linkAtual) marcarPublicada(linkAtual);
 
-  showStatus('s4-status', 'success', '🎉 Abrindo NextSite — Tudo pronto!');
+  showStatus('s4-status', 'success', '🎉 Abrindo NextSite...');
   setTimeout(() => window.open(url, '_blank'), 400);
   
   const btn = document.getElementById('btn-publicar');
