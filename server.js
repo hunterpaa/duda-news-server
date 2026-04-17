@@ -226,7 +226,10 @@ app.get('/buscar-fotos', async (req, res) => {
     const items = response.data?.items || [];
 
     if (!items.length) {
-      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada para esse tema.' });
+      // Mostra o que o Google retornou para ajudar no diagnóstico
+      const info = JSON.stringify(response.data).substring(0, 300);
+      console.error('Google retornou sem itens:', info);
+      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada. Resposta: ' + info });
     }
 
     const fotos = items.map(i => i.link).filter(Boolean);
