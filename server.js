@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'application/json, */*',
   'Accept-Language': 'pt-BR,pt;q=0.9',
 };
@@ -77,14 +77,14 @@ function extrairPalavrasChave(titulo) {
   const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
   const demais   = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
 
-  const selecionadas = [...new Set([...proprias, ...demais])].slice(0, 6);
+  const selecionadas = [...new Set([...proprias, ...demais])].slice(0, 5);
   return selecionadas.join(' ');
 }
 
 let phpSessionId = '';
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, message: 'Servidor da Duda rodando com Busca Ninja!' });
+  res.json({ ok: true, message: 'Servidor Tanaka Sports - Modo Ninja Ativo!' });
 });
 
 app.post('/cookie', (req, res) => {
@@ -115,30 +115,12 @@ app.get('/materia', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
 
-  const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Googlebot/2.1 (+http://www.google.com/bot.html)',
-  ];
-
-  let response = null;
-  let lastError = null;
-
-  for (const ua of userAgents) {
-    try {
-      response = await axios.get(url, {
-        headers: { 'User-Agent': ua, 'Referer': 'https://www.google.com/' },
-        timeout: 15000,
-      });
-      if (response.status === 200) break;
-    } catch (e) {
-      lastError = e;
-      continue;
-    }
-  }
-
-  if (!response) return res.status(500).json({ ok: false, erro: lastError?.message || 'Erro ao acessar matéria' });
-
   try {
+    const response = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Referer': 'https://www.google.com/' },
+      timeout: 15000,
+    });
+
     const $ = cheerio.load(response.data);
     const titulo = $('h1').first().text().trim();
     $('script, style, nav, header, footer, aside, figure, figcaption').remove();
@@ -155,13 +137,13 @@ app.get('/materia', async (req, res) => {
   }
 });
 
-// BUSCA NINJA (SEM API KEY / SEM CARTÃO)
+// 🚀 BUSCA NINJA V3 (SEM API / SEM CUSTO)
 app.get('/buscar-fotos', async (req, res) => {
-  const { titulo, pagina = '1' } = req.query;
+  const { titulo } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
-  const palavrasChave = extrairPalavrasChave(titulo);
-  const url = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave)}&tbm=isch&hl=pt-BR`;
+  const q = extrairPalavrasChave(titulo);
+  const url = `https://www.google.com/search?q=${encodeURIComponent(q)}&tbm=isch&hl=pt-BR`;
 
   try {
     const response = await axios.get(url, {
@@ -169,21 +151,33 @@ app.get('/buscar-fotos', async (req, res) => {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Referer': 'https://www.google.com/',
       },
-      timeout: 12000,
+      timeout: 10000,
     });
 
     const html = response.data;
-    const matches = html.match(/https?:\/\/[^"'\s\\]+\.(jpg|jpeg|png|webp)[^"'\s\\]*/gi) || [];
+    // Regex aprimorada para achar URLs reais de imagens no meio do código do Google
+    const regex = /"(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp))"/gi;
+    let matches = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      matches.push(match[1]);
+    }
 
     const fotos = [...new Set(matches)]
-      .filter(u => !u.includes('google') && !u.includes('gstatic') && u.length < 500)
-      .slice(0, 6);
+      .filter(u => 
+        !u.includes('gstatic.com') && 
+        !u.includes('encrypted-tbn') && 
+        u.length < 300
+      )
+      .slice(0, 10);
 
-    if (!fotos.length) return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada.' });
+    if (fotos.length === 0) {
+      return res.status(404).json({ ok: false, erro: 'Nenhuma foto encontrada. Tente um título diferente.' });
+    }
 
-    return res.json({ ok: true, fotos, palavrasChave, fonte: 'scraping-ninja' });
+    return res.json({ ok: true, fotos, palavrasChave: q, fonte: 'google-scraping-v3' });
   } catch (e) {
-    return res.status(500).json({ ok: false, erro: e.message });
+    return res.status(500).json({ ok: false, erro: 'Erro na busca: ' + e.message });
   }
 });
 
@@ -192,29 +186,4 @@ app.post('/upload-foto', async (req, res) => {
   if (!fotoUrl || !titulo || !phpSessionId) return res.status(400).json({ ok: false, erro: 'Faltam dados ou sessão' });
 
   const legendaCurta = extrairPalavrasChave(titulo);
-  const nomeSlug = legendaCurta.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').toLowerCase();
-
-  try {
-    const imgRes = await axios.get(fotoUrl, { responseType: 'arraybuffer', timeout: 15000 });
-    const form = new FormData();
-    form.append('files[]', Buffer.from(imgRes.data), { filename: `${nomeSlug}.jpg`, contentType: 'image/jpeg' });
-    form.append('parent_wda[0]', '6');
-    form.append('empresa', '1');
-    form.append('titulo_wda[0]', legendaCurta);
-    form.append('credito_wda[0]', 'Estadão Conteúdo');
-    form.append('descricao_wda[0]', titulo);
-    form.append('publica[0]', '1');
-
-    const uploadRes = await axios.post(
-      'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
-      form,
-      { headers: { ...form.getHeaders(), 'Cookie': `PHPSESSID=${phpSessionId}` }, timeout: 30000 }
-    );
-    res.json({ ok: true, message: 'Foto enviada!', resposta: uploadRes.data });
-  } catch (e) {
-    res.status(500).json({ ok: false, erro: e.message });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
+  const nomeSlug = legendaCurta.normalize('NFD').replace(/[\u0300-\u0
