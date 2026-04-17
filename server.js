@@ -196,56 +196,92 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
-// Scraping do Google Imagens — extrai URLs de fotos diretamente do HTML
-// Sem API key, sem cartão, retorna fotos recentes e relevantes
+// Estratégia: DuckDuckGo Images (não bloqueia datacenters) com fallback em
+// Lance! e Máquina do Esporte via og:image
 app.get('/buscar-fotos', async (req, res) => {
   const { titulo, pagina = '1' } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
   const pg = Math.max(1, parseInt(pagina) || 1);
+  // Query inteligente: palavras-chave + ano atual para fotos recentes
   const palavrasChave = extrairPalavrasChave(titulo);
-  const start = (pg - 1) * 6;
+  const query = palavrasChave + ' futebol 2026';
+  const offset = (pg - 1) * 6;
 
-  const url = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave)}&tbm=isch&hl=pt-BR&start=${start}`;
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept-Language': 'pt-BR,pt;q=0.9',
+  };
 
+  // ── Tentativa 1: DuckDuckGo Images ──
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-        'Referer': 'https://www.google.com/',
-      },
-      timeout: 12000,
+    // Passo 1: pega o token vqd
+    const resVqd = await axios.get(`https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`, {
+      headers, timeout: 10000
     });
+    const vqdMatch = resVqd.data.match(/vqd='(.*?)'/);
+    const vqd = vqdMatch?.[1];
 
-    // Extrai URLs de imagens do HTML via regex — funciona com jpg, jpeg, png, webp
-    const html = response.data;
+    if (vqd) {
+      // Passo 2: busca imagens
+      const resImgs = await axios.get('https://duckduckgo.com/i.js', {
+        params: { l: 'br-pt', o: 'json', q: query, vqd, s: offset },
+        headers, timeout: 10000
+      });
+      const results = resImgs.data?.results || [];
+      const fotos = results.slice(0, 6).map(r => r.image).filter(Boolean);
 
-    // Debug: loga os primeiros 500 chars para ver o que o Google retornou
-    console.log('Google HTML preview:', html.substring(0, 500));
-    const matches = html.match(/https?:\/\/[^"'\s\\]+\.(jpg|jpeg|png|webp)[^"'\s\\]*/gi) || [];
+      if (fotos.length > 0) {
+        console.log(`DuckDuckGo: ${fotos.length} fotos para "${palavrasChave}"`);
+        return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'duckduckgo' });
+      }
+    }
+  } catch (e) {
+    console.error('DuckDuckGo falhou:', e.message);
+  }
 
-    // Filtra: remove Google/gstatic, deduplica, pega só as 6 melhores
-    const fotos = [...new Set(matches)]
-      .filter(u =>
-        !u.includes('google.com') &&
-        !u.includes('gstatic.com') &&
-        !u.includes('googleusercontent') &&
-        u.length < 500
-      )
-      .slice(0, 6);
+  // ── Fallback: Lance! + Máquina do Esporte via og:image ──
+  try {
+    const [linksMaquina, linksLance] = await Promise.all([
+      axios.get(`https://maquinadoesporte.com.br/search/${encodeURIComponent(palavrasChave)}/feed/rss2/`, { headers, timeout: 8000 })
+        .then(r => [...(r.data.match(/<link>([^<]+)<\/link>/gi) || [])]
+          .map(m => m.replace(/<\/?link>/g,'').trim())
+          .filter(l => l.includes('maquinadoesporte.com.br') && !l.includes('/feed') && !l.endsWith('.br/'))
+          .slice((pg-1)*3, pg*3)
+        ).catch(() => []),
+      axios.get(`https://www.lance.com.br/busca?q=${encodeURIComponent(palavrasChave)}`, { headers, timeout: 8000 })
+        .then(r => [...new Set((r.data.match(/href="(https:\/\/www\.lance\.com\.br\/[^"]+\.html)"/gi) || [])
+          .map(m => m.replace(/href="/,'').replace(/"$/,''))
+          .filter(l => !l.includes('/busca') && !l.includes('/tag/') && !l.includes('/autor/')))]
+          .slice((pg-1)*3, pg*3)
+        ).catch(() => [])
+    ]);
 
-    if (!fotos.length) {
-      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada. Tente de novo.' });
+    const todosLinks = [];
+    for (let i = 0; i < Math.max(linksMaquina.length, linksLance.length); i++) {
+      if (linksMaquina[i]) todosLinks.push(linksMaquina[i]);
+      if (linksLance[i]) todosLinks.push(linksLance[i]);
     }
 
-    return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'google-imagens' });
-
+    if (todosLinks.length) {
+      const fotosRaw = await Promise.allSettled(todosLinks.map(link =>
+        axios.get(link, { headers, timeout: 6000 }).then(r => {
+          const m1 = r.data.match(/name="twitter:image"\s+content="([^"]+)"/);
+          const m2 = r.data.match(/property="og:image"\s+content="([^"]+)"/);
+          const foto = m1?.[1] || m2?.[1];
+          return (foto && foto.startsWith('http') && !foto.includes('logo') && !foto.includes('favicon')) ? foto : null;
+        }).catch(() => null)
+      ));
+      const fotos = fotosRaw.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+      if (fotos.length > 0) {
+        return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'portais' });
+      }
+    }
   } catch (e) {
-    console.error('Scraping Google falhou:', e.message);
-    return res.status(500).json({ ok: false, erro: 'Erro ao buscar fotos: ' + e.message });
+    console.error('Fallback portais falhou:', e.message);
   }
+
+  return res.status(404).json({ ok: false, erro: 'Não foi possível encontrar fotos. Tente de novo.' });
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
