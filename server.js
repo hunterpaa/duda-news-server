@@ -30,6 +30,18 @@ function formatarData(ts) {
   return new Date(ts * 1000).toLocaleString('pt-BR');
 }
 
+// ── Converte qualquer texto em slug limpo para nome de arquivo ──
+function toSlug(str) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // remove acentos
+    .replace(/[^a-zA-Z0-9\s-]/g, '')                     // remove especiais
+    .replace(/\s+/g, '-')                                 // espaços → hífens
+    .replace(/-+/g, '-')                                  // hífens duplos
+    .replace(/^-|-$/g, '')                                // hífens nas pontas
+    .toLowerCase()
+    .substring(0, 60);                                    // limita tamanho
+}
+
 // ── Extrai palavras-chave (times, jogadores) — prioriza nomes próprios ──
 function extrairPalavrasChave(titulo) {
   const stop = new Set([
@@ -41,15 +53,12 @@ function extrairPalavrasChave(titulo) {
   const palavras = titulo.replace(/[^\wÀ-ÿ\s]/g, ' ').split(/\s+/)
     .filter(p => p.length > 2 && !stop.has(p.toLowerCase()));
   const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
-  const demais   = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
+  const demais = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
   return [...new Set([...proprias, ...demais])].slice(0, 5).join(' ');
 }
 
-// ── Gera legenda curta descritiva sem precisar de API externa ──
-// Ex: "Flamengo x Independiente Medellín pela Libertadores"
-// → "Flamengo Independiente Medellin Libertadores"
+// ── Gera legenda curta para o campo titulo_wda no NextSite ──
 function gerarLegenda(titulo) {
-  // Pega os 4 nomes próprios mais relevantes do título
   const stop = new Set([
     'de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem',
     'que','se','o','a','os','as','um','uma','ao','e','ou','mas','mais','como',
@@ -61,7 +70,6 @@ function gerarLegenda(titulo) {
   const palavras = titulo.replace(/[^\wÀ-ÿ\s]/g, ' ').split(/\s+/)
     .filter(p => p.length > 2 && !stop.has(p.toLowerCase()));
   const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
-  // Pega até 4 nomes próprios para legenda concisa
   return [...new Set(proprias)].slice(0, 4).join(' ') || extrairPalavrasChave(titulo);
 }
 
@@ -99,15 +107,16 @@ app.get('/materias', async (req, res) => {
       variables: {
         classification: 'clicrbs-rs/gauchazh/esportes',
         tag: 'estadao-conteudo',
-        limit: 20, page: 1,
+        limit: 20,
+        page: 1,
       },
     };
     const r = await axios.post(GRAPHQL_URL, body, { headers: HEADERS, timeout: 15000 });
     const materias = (r.data?.data?.contents || []).map(item => ({
       titulo: sanitizar(item.headline?.text || ''),
-      link:   item.links?.canonical || '',
-      tempo:  formatarData(item.published_timestamp),
-      autor:  item.authors?.[0]?.name || '',
+      link: item.links?.canonical || '',
+      tempo: formatarData(item.published_timestamp),
+      autor: item.authors?.[0]?.name || '',
     }));
     res.json({ ok: true, total: materias.length, materias });
   } catch (e) {
@@ -131,7 +140,8 @@ app.get('/materia', async (req, res) => {
     try {
       response = await axios.get(url, {
         headers: { 'User-Agent': ua, 'Accept-Language': 'pt-BR,pt;q=0.9', 'Referer': 'https://www.google.com/' },
-        timeout: 15000, maxRedirects: 5,
+        timeout: 15000,
+        maxRedirects: 5,
       });
       if (response.status === 200) break;
     } catch (e) { continue; }
@@ -142,21 +152,17 @@ app.get('/materia', async (req, res) => {
   try {
     const $ = cheerio.load(response.data);
     const titulo = $('h1').first().text().trim();
-
     $('script,style,nav,header,footer,aside,figure,figcaption').remove();
     $('[class*="ad"],[class*="banner"],[class*="related"],[class*="newsletter"],[class*="paywall"]').remove();
-
     let paragrafos = [];
     for (const sel of ['article p','[class*="article"] p','[class*="content"] p','main p','p']) {
       const encontrados = [];
       $(sel).each((i, el) => {
         const txt = $(el).text().trim();
-        if (txt.length > 40 && !txt.includes('©') && !txt.includes('Todos os direitos'))
-          encontrados.push(txt);
+        if (txt.length > 40 && !txt.includes('©') && !txt.includes('Todos os direitos')) encontrados.push(txt);
       });
       if (encontrados.length >= 3) { paragrafos = encontrados; break; }
     }
-
     const texto = [...new Set(paragrafos)].join('\n\n');
     res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
   } catch (e) {
@@ -165,47 +171,62 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── UPLOAD DE FOTO ──
-// Legenda gerada automaticamente a partir dos nomes próprios do título
-// Ex: "Conmebol divulga áudio VAR Palmeiras" → "Conmebol VAR Palmeiras"
+// Recebe fotoUrl, titulo e nomeFoto (customizado pelo app)
 app.post('/upload-foto', async (req, res) => {
-  const { fotoUrl, titulo } = req.body;
+  const { fotoUrl, titulo, nomeFoto } = req.body;
 
-  if (!fotoUrl || !titulo)
+  if (!fotoUrl || !titulo) {
     return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
-
-  if (!phpSessionId)
+  }
+  if (!phpSessionId) {
     return res.status(401).json({ ok: false, erro: 'Cookie não encontrado. Abra o NextSite com o favorito Tanaka Sports primeiro!' });
+  }
 
-  // Legenda curta — nomes próprios do título (times, jogadores, competições)
-  const legendaCurta = gerarLegenda(titulo);
-  const nomeSlug = legendaCurta
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    .replace(/\s+/g, '-')
-    .toLowerCase();
+  // Nome do arquivo: usa nomeFoto enviado pelo app (já é slug), ou gera a partir do título
+  const nomeSlug = nomeFoto ? toSlug(nomeFoto) : toSlug(gerarLegenda(titulo));
+
+  // Legenda que aparece no NextSite — usa nomeFoto com espaços, ou gera a partir do título
+  const legendaExibicao = nomeFoto
+    ? nomeFoto.replace(/-/g, ' ')
+    : gerarLegenda(titulo);
 
   try {
+    // 1. Faz o download da imagem no servidor (evita bloqueio de CORS no celular)
     const imgRes = await axios.get(fotoUrl, {
       responseType: 'arraybuffer',
-      timeout: 15000,
-      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.google.com/' },
+      timeout: 20000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://www.google.com/',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+      },
     });
 
-    const ct  = imgRes.headers['content-type'] || 'image/jpeg';
-    const ext = ct.includes('png') ? 'png' : ct.includes('gif') ? 'gif' : 'jpg';
+    // 2. Determina extensão pelo Content-Type
+    const ct = imgRes.headers['content-type'] || 'image/jpeg';
+    let ext = 'jpg';
+    if (ct.includes('png')) ext = 'png';
+    else if (ct.includes('gif')) ext = 'gif';
+    else if (ct.includes('webp')) ext = 'webp';
 
+    const nomeArquivo = `${nomeSlug}.${ext}`;
+
+    // 3. Monta o FormData e envia ao NextSite
     const form = new FormData();
-    form.append('files[]', Buffer.from(imgRes.data), { filename: `${nomeSlug}.${ext}`, contentType: ct });
+    form.append('files[]', Buffer.from(imgRes.data), {
+      filename: nomeArquivo,
+      contentType: ct,
+    });
     form.append('parent_wda[0]', '6');
     form.append('empresa', '1');
-    form.append('titulo_wda[0]', legendaCurta);   // legenda curta — aparece no jornal
+    form.append('titulo_wda[0]', legendaExibicao);    // legenda que aparece no jornal
     form.append('credito_wda[0]', 'Estadão Conteúdo');
     form.append('descricao_wda[0]', titulo);
     form.append('keyword_wda[0]', '');
     form.append('transparencia_wda[0]', '0');
     form.append('publica[0]', '1');
 
-    await axios.post(
+    const uploadRes = await axios.post(
       'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
       form,
       {
@@ -219,9 +240,21 @@ app.post('/upload-foto', async (req, res) => {
       }
     );
 
-    res.json({ ok: true, message: 'Foto enviada!', legendaCurta });
+    // Loga a resposta do NextSite para debug
+    console.log('NextSite upload response:', uploadRes.status, JSON.stringify(uploadRes.data).substring(0, 200));
+
+    res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaExibicao });
+
   } catch (e) {
-    res.status(500).json({ ok: false, erro: e.message });
+    console.error('Erro upload-foto:', e.message);
+    // Detalha o erro para a Duda ver no app
+    let mensagem = e.message;
+    if (e.response) {
+      mensagem = `Erro ${e.response.status} do NextSite`;
+    } else if (e.code === 'ECONNABORTED') {
+      mensagem = 'Timeout — imagem demorou demais para baixar';
+    }
+    res.status(500).json({ ok: false, erro: mensagem });
   }
 });
 
