@@ -186,4 +186,29 @@ app.post('/upload-foto', async (req, res) => {
   if (!fotoUrl || !titulo || !phpSessionId) return res.status(400).json({ ok: false, erro: 'Faltam dados ou sessão' });
 
   const legendaCurta = extrairPalavrasChave(titulo);
-  const nomeSlug = legendaCurta.normalize('NFD').replace(/[\u0300-\u0
+  const nomeSlug = legendaCurta.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').toLowerCase();
+
+  try {
+    const imgRes = await axios.get(fotoUrl, { responseType: 'arraybuffer', timeout: 15000 });
+    const form = new FormData();
+    form.append('files[]', Buffer.from(imgRes.data), { filename: `${nomeSlug}.jpg`, contentType: 'image/jpeg' });
+    form.append('parent_wda[0]', '6');
+    form.append('empresa', '1');
+    form.append('titulo_wda[0]', legendaCurta);
+    form.append('credito_wda[0]', 'Estadão Conteúdo');
+    form.append('descricao_wda[0]', titulo);
+    form.append('publica[0]', '1');
+
+    const uploadRes = await axios.post(
+      'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
+      form,
+      { headers: { ...form.getHeaders(), 'Cookie': `PHPSESSID=${phpSessionId}` }, timeout: 30000 }
+    );
+    res.json({ ok: true, message: 'Foto enviada!', resposta: uploadRes.data });
+  } catch (e) {
+    res.status(500).json({ ok: false, erro: e.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
