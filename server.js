@@ -43,6 +43,15 @@ async function buscarMateriasDaAPI(page = 1, limit = 20) {
   return res.data?.data?.contents || [];
 }
 
+function sanitizar(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2013|\u2014/g, '-')
+    .replace(/\u00A0/g, ' ');
+}
+
 function formatarData(timestamp) {
   if (!timestamp) return '';
   const d = new Date(timestamp * 1000);
@@ -93,7 +102,7 @@ app.get('/materias', async (req, res) => {
   try {
     const items = await buscarMateriasDaAPI(1, 20);
     const materias = items.map(item => ({
-      titulo: item.headline?.text || '',
+      titulo: sanitizar(item.headline?.text || ''),
       link: item.links?.canonical || '',
       data: item.published_timestamp,
       tempo: formatarData(item.published_timestamp),
@@ -179,7 +188,8 @@ app.get('/materia', async (req, res) => {
 
     paragrafos = [...new Set(paragrafos)];
     const texto = paragrafos.join('\n\n');
-    res.json({ ok: true, titulo, texto });
+
+    res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
