@@ -322,3 +322,43 @@ app.post('/upload-foto', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));
+app.get('/teste-google', async (req, res) => {
+  const key = process.env.GOOGLE_API_KEY;
+  const cx = process.env.SEARCH_ENGINE_ID;
+
+  console.log("🔑 GOOGLE_API_KEY:", key);
+  console.log("🔎 SEARCH_ENGINE_ID:", cx);
+
+  if (!key || !cx) {
+    return res.json({
+      ok: false,
+      erro: 'Variáveis de ambiente não carregadas',
+      GOOGLE_API_KEY: key,
+      SEARCH_ENGINE_ID: cx
+    });
+  }
+
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?q=neymar&cx=${cx}&key=${key}&searchType=image&num=3`;
+
+    console.log("🌐 URL:", url);
+
+    const response = await axios.get(url);
+
+    const imagens = response.data.items?.map(item => item.link) || [];
+
+    return res.json({
+      ok: true,
+      total: imagens.length,
+      imagens
+    });
+
+  } catch (e) {
+    console.log("❌ ERRO GOOGLE:", e.response?.data || e.message);
+
+    return res.json({
+      ok: false,
+      erro: e.response?.data || e.message
+    });
+  }
+});
