@@ -651,15 +651,25 @@ function goStep4() {
 async function copiarEAbrir() {
   const titulo = document.getElementById('edit-titulo').value.trim();
   const texto = document.getElementById('edit-texto').value.trim();
-  try { await navigator.clipboard.writeText(titulo + '\n\n' + texto); } catch(e) {}
   const chapeu = document.getElementById('edit-chapeu').value;
-  const json = JSON.stringify({ titulo, texto, chapeu });
+  const fotoNome = document.getElementById('foto-nome').value.trim(); // <-- PEGA O NOME DA FOTO
+
+  try { 
+    await navigator.clipboard.writeText(titulo + '\n\n' + texto); 
+  } catch(e) {}
+
+  // ADICIONAMOS O fotoNome NO OBJETO QUE VAI PARA O FAVORITO
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
+  
   const dados = btoa(unescape(encodeURIComponent(json)));
   const url = NEXTSITE + '&tanaka=' + dados;
+  
   const linkAtual = document.getElementById('edit-titulo')._link || '';
   if (linkAtual) marcarPublicada(linkAtual);
-  showStatus('s4-status', 'success', '🎉 Abrindo NextSite — formulário preenchido automaticamente!');
+
+  showStatus('s4-status', 'success', '🎉 Abrindo NextSite — Tudo pronto!');
   setTimeout(() => window.open(url, '_blank'), 400);
+  
   const btn = document.getElementById('btn-publicar');
   btn.textContent = '✅ Abrindo!';
   setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir NextSite'; }, 3000);
