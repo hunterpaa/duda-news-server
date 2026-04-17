@@ -196,49 +196,52 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
-// Google Custom Search API — busca imagens nos sites esportivos cadastrados
-// 100 buscas grátis/dia
-const GOOGLE_API_KEY = 'AIzaSyA_QZs0utlTDqFiDrmGyWJHieilyeGRFHI';
-const GOOGLE_CX = '26faffd42b55f47dc';
-
+// Scraping do Google Imagens — extrai URLs de fotos diretamente do HTML
+// Sem API key, sem cartão, retorna fotos recentes e relevantes
 app.get('/buscar-fotos', async (req, res) => {
   const { titulo, pagina = '1' } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
   const pg = Math.max(1, parseInt(pagina) || 1);
   const palavrasChave = extrairPalavrasChave(titulo);
-  const start = (pg - 1) * 6 + 1; // paginação: 1, 7, 13...
+  const start = (pg - 1) * 6;
+
+  const url = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave)}&tbm=isch&hl=pt-BR&start=${start}`;
 
   try {
-    const url = 'https://www.googleapis.com/customsearch/v1'
-      + `?key=${GOOGLE_API_KEY}`
-      + `&cx=${GOOGLE_CX}`
-      + `&q=${encodeURIComponent(palavrasChave)}`
-      + `&searchType=image`
-      + `&num=6`
-      + `&start=${start}`
-      + `&imgSize=large`
-      + `&safe=active`
-      + `&hl=pt-BR`
-      + `&gl=br`;
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'Referer': 'https://www.google.com/',
+      },
+      timeout: 12000,
+    });
 
-    const response = await axios.get(url, { timeout: 10000 });
-    const items = response.data?.items || [];
+    // Extrai URLs de imagens do HTML via regex — funciona com jpg, jpeg, png, webp
+    const html = response.data;
+    const matches = html.match(/https?:\/\/[^"'\s\\]+\.(jpg|jpeg|png|webp)[^"'\s\\]*/gi) || [];
 
-    if (!items.length) {
-      // Mostra o que o Google retornou para ajudar no diagnóstico
-      const info = JSON.stringify(response.data).substring(0, 300);
-      console.error('Google retornou sem itens:', info);
-      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada. Resposta: ' + info });
+    // Filtra: remove Google/gstatic, deduplica, pega só as 6 melhores
+    const fotos = [...new Set(matches)]
+      .filter(u =>
+        !u.includes('google.com') &&
+        !u.includes('gstatic.com') &&
+        !u.includes('googleusercontent') &&
+        u.length < 500
+      )
+      .slice(0, 6);
+
+    if (!fotos.length) {
+      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada. Tente de novo.' });
     }
 
-    const fotos = items.map(i => i.link).filter(Boolean);
-    return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'google' });
+    return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'google-imagens' });
 
   } catch (e) {
-    const msg = e.response?.data?.error?.message || e.message;
-    console.error('Google Custom Search falhou:', msg);
-    return res.status(500).json({ ok: false, erro: 'Erro na busca de fotos: ' + msg });
+    console.error('Scraping Google falhou:', e.message);
+    return res.status(500).json({ ok: false, erro: 'Erro ao buscar fotos: ' + e.message });
   }
 });
 // ─────────────────────────────────────────────────────────────────────────────
