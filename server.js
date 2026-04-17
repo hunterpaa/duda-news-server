@@ -58,8 +58,6 @@ function formatarData(timestamp) {
   return d.toLocaleString('pt-BR');
 }
 
-// ── EXTRAI palavras-chave relevantes do título ────────────────────────────────
-// Remove stop words, mantém nomes próprios (times, atletas) e termos esportivos
 function extrairPalavrasChave(titulo) {
   const stopWords = new Set([
     'de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem',
@@ -76,19 +74,17 @@ function extrairPalavrasChave(titulo) {
     .split(/\s+/)
     .filter(p => p.length > 2 && !stopWords.has(p.toLowerCase()));
 
-  // Nomes próprios (maiúscula) têm prioridade — geralmente times e atletas
   const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
   const demais   = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
 
   const selecionadas = [...new Set([...proprias, ...demais])].slice(0, 6);
   return selecionadas.join(' ');
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 let phpSessionId = '';
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, message: 'Servidor da Duda rodando!' });
+  res.json({ ok: true, message: 'Servidor da Duda rodando com Busca Ninja!' });
 });
 
 app.post('/cookie', (req, res) => {
@@ -121,7 +117,6 @@ app.get('/materia', async (req, res) => {
 
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
     'Googlebot/2.1 (+http://www.google.com/bot.html)',
   ];
 
@@ -131,15 +126,8 @@ app.get('/materia', async (req, res) => {
   for (const ua of userAgents) {
     try {
       response = await axios.get(url, {
-        headers: {
-          'User-Agent': ua,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-          'Cache-Control': 'no-cache',
-          'Referer': 'https://www.google.com/',
-        },
+        headers: { 'User-Agent': ua, 'Referer': 'https://www.google.com/' },
         timeout: 15000,
-        maxRedirects: 5,
       });
       if (response.status === 200) break;
     } catch (e) {
@@ -148,217 +136,85 @@ app.get('/materia', async (req, res) => {
     }
   }
 
-  if (!response) {
-    return res.status(500).json({ ok: false, erro: lastError?.message || 'Não foi possível acessar a matéria' });
-  }
+  if (!response) return res.status(500).json({ ok: false, erro: lastError?.message || 'Erro ao acessar matéria' });
 
   try {
     const $ = cheerio.load(response.data);
     const titulo = $('h1').first().text().trim();
-
     $('script, style, nav, header, footer, aside, figure, figcaption').remove();
-    $('[class*="ad"], [class*="banner"], [class*="related"], [class*="recommend"]').remove();
-    $('[class*="newsletter"], [class*="paywall"], [class*="subscription"]').remove();
-
+    
     let paragrafos = [];
-    const seletores = [
-      'article p', '[class*="article"] p', '[class*="content"] p',
-      '[class*="texto"] p', '[class*="body"] p', 'main p', '.post p',
-    ];
+    $('p').each((i, el) => {
+      const txt = $(el).text().trim();
+      if (txt.length > 50 && !txt.includes('©')) paragrafos.push(txt);
+    });
 
-    for (const sel of seletores) {
-      const encontrados = [];
-      $(sel).each((i, el) => {
-        const txt = $(el).text().trim();
-        if (txt.length > 40 && !txt.includes('©') && !txt.includes('Todos os direitos')) {
-          encontrados.push(txt);
-        }
-      });
-      if (encontrados.length >= 3) { paragrafos = encontrados; break; }
-    }
-
-    if (paragrafos.length < 2) {
-      $('p').each((i, el) => {
-        const txt = $(el).text().trim();
-        if (txt.length > 60 && !txt.includes('©') && !txt.includes('Todos os direitos')) {
-          paragrafos.push(txt);
-        }
-      });
-    }
-
-    paragrafos = [...new Set(paragrafos)];
-    const texto = paragrafos.join('\n\n');
-
-    res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
+    res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(paragrafos.join('\n\n')) });
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
-// ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
-// Scraping do Google Imagens — extrai URLs de fotos diretamente do HTML
-// Sem API key, sem cartão, retorna fotos recentes e relevantes
+// BUSCA NINJA (SEM API KEY / SEM CARTÃO)
 app.get('/buscar-fotos', async (req, res) => {
   const { titulo, pagina = '1' } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
-  const pg = Math.max(1, parseInt(pagina) || 1);
   const palavrasChave = extrairPalavrasChave(titulo);
-  const start = (pg - 1) * 6;
-
-  const url = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave)}&tbm=isch&hl=pt-BR&start=${start}`;
+  const url = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave)}&tbm=isch&hl=pt-BR`;
 
   try {
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
         'Referer': 'https://www.google.com/',
       },
       timeout: 12000,
     });
 
-    // Extrai URLs de imagens do HTML via regex — funciona com jpg, jpeg, png, webp
     const html = response.data;
-
-    // Debug: loga os primeiros 500 chars para ver o que o Google retornou
-    console.log('Google HTML preview:', html.substring(0, 500));
     const matches = html.match(/https?:\/\/[^"'\s\\]+\.(jpg|jpeg|png|webp)[^"'\s\\]*/gi) || [];
 
-    // Filtra: remove Google/gstatic, deduplica, pega só as 6 melhores
     const fotos = [...new Set(matches)]
-      .filter(u =>
-        !u.includes('google.com') &&
-        !u.includes('gstatic.com') &&
-        !u.includes('googleusercontent') &&
-        u.length < 500
-      )
+      .filter(u => !u.includes('google') && !u.includes('gstatic') && u.length < 500)
       .slice(0, 6);
 
-    if (!fotos.length) {
-      return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada. Tente de novo.' });
-    }
+    if (!fotos.length) return res.status(500).json({ ok: false, erro: 'Nenhuma foto encontrada.' });
 
-    return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'google-imagens' });
-
+    return res.json({ ok: true, fotos, palavrasChave, fonte: 'scraping-ninja' });
   } catch (e) {
-    console.error('Scraping Google falhou:', e.message);
-    return res.status(500).json({ ok: false, erro: 'Erro ao buscar fotos: ' + e.message });
+    return res.status(500).json({ ok: false, erro: e.message });
   }
 });
-// ─────────────────────────────────────────────────────────────────────────────
 
-// ── UPLOAD DE FOTO ────────────────────────────────────────────────────────────
-// Legenda/nome gerados automaticamente a partir das palavras-chave do título.
-// Clean e curto — ex: "Flamengo Palmeiras Brasileirao"
-// O NextSite ordena por data de upload: mesmo nome duplicado, o mais recente aparece primeiro.
 app.post('/upload-foto', async (req, res) => {
   const { fotoUrl, titulo } = req.body;
+  if (!fotoUrl || !titulo || !phpSessionId) return res.status(400).json({ ok: false, erro: 'Faltam dados ou sessão' });
 
-  if (!fotoUrl || !titulo) {
-    return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
-  }
-
-  if (!phpSessionId) {
-    return res.status(401).json({ ok: false, erro: 'Cookie de sessão não encontrado. Clique no favorito Tanaka Sports no NextSite primeiro!' });
-  }
-
-  // Legenda curta = palavras-chave relevantes do título (mesmo algoritmo do buscar-fotos)
-  // Ex: "Flamengo Palmeiras Brasileirao" — aparece assim no jornal
   const legendaCurta = extrairPalavrasChave(titulo);
-
-  // Nome do arquivo = slug da legenda curta — simples e limpo
-  const nomeSlug = legendaCurta
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .toLowerCase()
-    .replace(/-+$/, '');
+  const nomeSlug = legendaCurta.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').toLowerCase();
 
   try {
-    const imgResponse = await axios.get(fotoUrl, {
-      responseType: 'arraybuffer',
-      timeout: 15000,
-      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.google.com/' }
-    });
-
-    const contentType = imgResponse.headers['content-type'] || 'image/jpeg';
-    const ext = contentType.includes('png') ? 'png' : contentType.includes('gif') ? 'gif' : 'jpg';
-    const nomeArquivo = `${nomeSlug}.${ext}`;
-
+    const imgRes = await axios.get(fotoUrl, { responseType: 'arraybuffer', timeout: 15000 });
     const form = new FormData();
-    form.append('files[]', Buffer.from(imgResponse.data), { filename: nomeArquivo, contentType });
+    form.append('files[]', Buffer.from(imgRes.data), { filename: `${nomeSlug}.jpg`, contentType: 'image/jpeg' });
     form.append('parent_wda[0]', '6');
     form.append('empresa', '1');
-    form.append('titulo_wda[0]', legendaCurta);    // legenda curta — aparece no jornal
+    form.append('titulo_wda[0]', legendaCurta);
     form.append('credito_wda[0]', 'Estadão Conteúdo');
-    form.append('descricao_wda[0]', titulo);        // título completo na descrição
-    form.append('keyword_wda[0]', '');
-    form.append('transparencia_wda[0]', '0');
+    form.append('descricao_wda[0]', titulo);
     form.append('publica[0]', '1');
 
     const uploadRes = await axios.post(
       'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
       form,
-      {
-        headers: {
-          ...form.getHeaders(),
-          'Cookie': `PHPSESSID=${phpSessionId}`,
-          'Referer': 'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/novo.php?empresa=1&parent=6',
-          'Origin': 'https://admin-dc4.nextsite.com.br',
-        },
-        timeout: 30000,
-      }
+      { headers: { ...form.getHeaders(), 'Cookie': `PHPSESSID=${phpSessionId}` }, timeout: 30000 }
     );
-
-    res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaCurta, resposta: uploadRes.data });
-
+    res.json({ ok: true, message: 'Foto enviada!', resposta: uploadRes.data });
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
-// ─────────────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));
-app.get('/teste-google', async (req, res) => {
-  const key = process.env.GOOGLE_API_KEY;
-  const cx = process.env.SEARCH_ENGINE_ID;
-
-  console.log("🔑 GOOGLE_API_KEY:", key);
-  console.log("🔎 SEARCH_ENGINE_ID:", cx);
-
-  if (!key || !cx) {
-    return res.json({
-      ok: false,
-      erro: 'Variáveis de ambiente não carregadas',
-      GOOGLE_API_KEY: key,
-      SEARCH_ENGINE_ID: cx
-    });
-  }
-
-  try {
-    const url = `https://www.googleapis.com/customsearch/v1?q=neymar&cx=${cx}&key=${key}&searchType=image&num=3`;
-
-    console.log("🌐 URL:", url);
-
-    const response = await axios.get(url);
-
-    const imagens = response.data.items?.map(item => item.link) || [];
-
-    return res.json({
-      ok: true,
-      total: imagens.length,
-      imagens
-    });
-
-  } catch (e) {
-    console.log("❌ ERRO GOOGLE:", e.response?.data || e.message);
-
-    return res.json({
-      ok: false,
-      erro: e.response?.data || e.message
-    });
-  }
-});
+app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
