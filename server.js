@@ -219,11 +219,11 @@ app.get('/buscar-fotos', async (req, res) => {
       timeout: 12000,
     });
 
-    // Debug: loga os primeiros 500 chars do HTML para ver o que o Google retornou
-    console.log('Google HTML preview:', html.substring(0, 500));
-
     // Extrai URLs de imagens do HTML via regex — funciona com jpg, jpeg, png, webp
     const html = response.data;
+
+    // Debug: loga os primeiros 500 chars para ver o que o Google retornou
+    console.log('Google HTML preview:', html.substring(0, 500));
     const matches = html.match(/https?:\/\/[^"'\s\\]+\.(jpg|jpeg|png|webp)[^"'\s\\]*/gi) || [];
 
     // Filtra: remove Google/gstatic, deduplica, pega só as 6 melhores
