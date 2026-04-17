@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tanaka Sports ⚽</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --pink: #c2185b; --pink-dark: #ad1457;
+  --pink-light: #fce4ec; --pink-bg: #fdf4f8;
+  --pink-border: #f8bbd0; --purple: #7b1fa2;
+  --radius: 14px; --radius-sm: 10px;
+  --btn-h: 52px; --input-h: 52px;
+}
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--pink-bg); color: #1a1a1a;
+  min-height: 100dvh; -webkit-font-smoothing: antialiased;
+}
+.header-bar {
+  background: linear-gradient(135deg, #c2185b 0%, #7b1fa2 100%);
+  padding: 1rem 1.25rem; display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo-circle { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.35); }
+.header-texts h1 { font-size: 20px; font-weight: 700; color: white; letter-spacing: -0.4px; }
+.header-texts p { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+.header-badge { margin-left: auto; background: rgba(255,255,255,0.18); color: white; font-size: 11px; padding: 5px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; white-space: nowrap; }
+.dot-online { width: 7px; height: 7px; border-radius: 50%; background: #69f0ae; flex-shrink: 0; }
+
+.app { max-width: 600px; margin: 0 auto; padding: 1rem; padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 1.1rem; }
+.tab { flex: 1; height: 46px; font-size: 15px; cursor: pointer; border: 2px solid #e91e8c; background: white; color: var(--pink); border-radius: 25px; font-family: inherit; font-weight: 600; transition: all 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.tab.active { background: var(--pink); color: white; }
+
+.steps { display: flex; align-items: center; gap: 4px; margin-bottom: 1.1rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.steps::-webkit-scrollbar { display: none; }
+.step { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #ccc; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+.step.done { color: var(--purple); }
+.step.active { color: var(--pink); font-weight: 700; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.step.done .step-num { background: var(--purple); border-color: var(--purple); color: white; font-size: 9px; }
+.step.active .step-num { background: var(--pink-light); }
+.arrow { color: #ddd; font-size: 12px; flex-shrink: 0; }
+
+.card { background: white; border: 1.5px solid var(--pink-border); border-radius: var(--radius); padding: 1.1rem; margin-bottom: 1rem; }
+.card-label { font-size: 11px; font-weight: 700; color: #e91e8c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 1rem; color: #1a1a1a; }
+
+.news-list { display: flex; flex-direction: column; gap: 8px; }
+.news-item { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1.5px solid var(--pink-light); border-radius: var(--radius-sm); background: #fff9fb; }
+.news-text { flex: 1; min-width: 0; }
+.news-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 3px; color: #1a1a1a; word-break: break-word; }
+.news-time { font-size: 11px; color: #aaa; }
+.tag-publicada { font-size: 11px; background: #f3e5f5; color: var(--purple); padding: 4px 8px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: var(--btn-h); padding: 0 20px; border-radius: 25px; border: 2px solid #ddd; background: white; font-size: 15px; cursor: pointer; font-family: inherit; font-weight: 600; color: #555; transition: all 0.12s; text-decoration: none; white-space: nowrap; touch-action: manipulation; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.btn:active { opacity: 0.8; transform: scale(0.97); }
+.btn.primary { background: var(--pink); color: white; border-color: var(--pink); }
+.btn.purple { background: var(--purple); color: white; border-color: var(--purple); }
+.btn.green { background: #2e7d32; color: white; border-color: #2e7d32; }
+.btn.small { height: 40px; padding: 0 14px; font-size: 13px; }
+.btn.full { width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+.btn-row .btn.primary, .btn-row .btn.purple { flex: 1; }
+
+.field { margin-bottom: 1rem; }
+label { font-size: 13px; color: #888; display: block; margin-bottom: 6px; font-weight: 600; }
+
+input[type=text], input[type=password], input[type=email], input[type=url] {
+  width: 100%; height: var(--input-h); border: 2px solid var(--pink-border); border-radius: var(--radius-sm);
+  padding: 0 14px; font-size: 16px; font-family: inherit; background: white; color: #1a1a1a;
+  -webkit-appearance: none; appearance: none; transition: border-color 0.15s;
+}
+input:focus { outline: none; border-color: var(--pink); }
+
+select { width: 100%; height: var(--input-h); border: 2px solid var(--pink-border); border-radius: var(--radius-sm); padding: 0 14px; font-size: 16px; font-family: inherit; background: white; color: #1a1a1a; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23aaa' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+select:focus { outline: none; border-color: var(--pink); }
+
+textarea { width: 100%; border: 2px solid var(--pink-border); border-radius: var(--radius-sm); padding: 14px; font-size: 16px; font-family: inherit; line-height: 1.65; resize: vertical; background: white; color: #1a1a1a; min-height: 220px; -webkit-appearance: none; appearance: none; }
+textarea:focus { outline: none; border-color: var(--pink); }
+.char-count { font-size: 12px; color: #ccc; text-align: right; margin-top: 4px; }
+
+.status { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 500; }
+.status.info { background: #f3e5f5; color: var(--purple); }
+.status.success { background: var(--pink-light); color: var(--pink); }
+.status.error { background: #fdecea; color: #c62828; }
+.status.loading { background: var(--pink-bg); color: var(--pink); }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── GRADE DE FOTOS ── */
+.fotos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 1rem 0; }
+.foto-opcao { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 3px solid transparent; cursor: pointer; aspect-ratio: 16/9; background: #f5e8f0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: border-color 0.15s, transform 0.1s; }
+.foto-opcao img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-opcao.selecionada { border-color: var(--pink); transform: scale(0.97); }
+.foto-opcao.selecionada::after { content: '✓'; position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; background: var(--pink); color: white; border-radius: 50%; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.foto-opcao.erro img { opacity: 0.2; }
+.foto-opcao.erro::before { content: '×'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #ccc; }
+.fotos-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 2rem; font-size: 14px; color: var(--pink); font-weight: 600; }
+.fotos-hint { font-size: 13px; color: #888; text-align: center; margin-bottom: 4px; }
+
+/* ── PALAVRA-CHAVE INFO ── */
+.kw-info { font-size: 12px; color: #bbb; text-align: center; margin-bottom: 8px; }
+.kw-info span { background: var(--pink-light); color: var(--pink); padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 11px; }
+
+/* ── CAMPO LEGENDA ── */
+.legenda-box { background: var(--pink-bg); border: 1.5px solid var(--pink-border); border-radius: var(--radius-sm); padding: 1rem; margin-top: 1rem; }
+.legenda-box label { color: var(--pink); font-size: 13px; font-weight: 700; margin-bottom: 6px; display: block; }
+.legenda-box input { border-color: var(--pink-border); }
+.legenda-box .hint { font-size: 11px; color: #bbb; margin-top: 5px; }
+
+/* ── UPLOAD STATUS ── */
+#foto-upload-status { margin-top: 10px; }
+
+.preview-box { background: var(--pink-bg); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem; border: 1.5px solid var(--pink-border); }
+.preview-label { font-size: 11px; color: #ccc; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.preview-titulo { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--pink); }
+.preview-texto { font-size: 13px; line-height: 1.6; color: #555; }
+.publish-hint { background: var(--pink-light); border: 1.5px solid #f48fb1; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: var(--pink); line-height: 1.6; margin-bottom: 0.75rem; font-weight: 500; }
+.divider { border: none; border-top: 1.5px dashed var(--pink-border); margin: 1rem 0; }
+.url-mono { font-size: 11px; font-family: monospace; background: var(--pink-bg); padding: 8px 10px; border-radius: 8px; color: #999; word-break: break-all; border: 1px solid var(--pink-border); }
+#buscar-hint { font-size: 12px; color: #ccc; display: block; margin-top: 6px; text-align: center; }
+
+@media (min-width: 600px) {
+  .btn-row .btn.primary, .btn-row .btn.purple { flex: none; }
+  .btn.full { width: auto; }
+  .fotos-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="logo-circle">⚽</div>
+  <div class="header-texts">
+    <h1>Tanaka Sports</h1>
+    <p>Redação esportiva da Duda 🌸</p>
+  </div>
+  <div class="header-badge"><div class="dot-online"></div> online</div>
+</div>
+
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('publicar')">✏️ Publicar</button>
+    <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
+  </div>
+
+  <div id="tab-publicar">
+    <div class="steps">
+      <div class="step active" id="ps1"><div class="step-num">1</div> Buscar</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps2"><div class="step-num">2</div> Revisar</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps3"><div class="step-num">3</div> Foto</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps4"><div class="step-num">4</div> Publicar</div>
+    </div>
+
+    <!-- PASSO 1 -->
+    <div class="card" id="step1">
+      <div class="card-label">📰 Passo 1</div>
+      <div class="card-title">Últimas matérias</div>
+      <div class="news-list" id="news-list">
+        <div style="font-size:14px;color:#ccc;padding:16px 0;text-align:center;">Toque em buscar para carregar 🏃‍♀️</div>
+      </div>
+      <div id="s1-status" class="status" style="display:none"></div>
+      <button class="btn primary full" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1rem;">⚡ Buscar matérias</button>
+      <span id="buscar-hint"></span>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="card" id="step2" style="display:none">
+      <div class="card-label">✍️ Passo 2</div>
+      <div class="card-title">Revisar a matéria</div>
+      <div class="field">
+        <label>Chapéu ⚽ (categoria)</label>
+        <select id="edit-chapeu">
+          <option value="Futebol">Futebol</option>
+          <option value="Basquete">Basquete</option>
+          <option value="Vôlei">Vôlei</option>
+          <option value="Tênis">Tênis</option>
+          <option value="Fórmula 1">Fórmula 1</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Título 📝</label>
+        <input type="text" id="edit-titulo" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Texto completo 📄</label>
+        <textarea id="edit-texto" rows="10" oninput="updateCount()"></textarea>
+        <div class="char-count" id="char-count">0 caracteres</div>
+      </div>
+      <div id="s2-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="goStep3()">Próximo: foto 📸 →</button>
+        <button class="btn" onclick="goStep1()">← Voltar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="card" id="step3" style="display:none">
+      <div class="card-label">🖼️ Passo 3</div>
+      <div class="card-title">Escolher foto</div>
+
+      <div id="fotos-area">
+        <div class="fotos-loading" id="fotos-loading" style="display:none">
+          <span class="spinner"></span> Buscando fotos...
+        </div>
+        <div id="fotos-status" class="status" style="display:none"></div>
+        <p class="kw-info" id="kw-info" style="display:none">Buscando por: <span id="kw-texto"></span></p>
+        <p class="fotos-hint" id="fotos-hint" style="display:none">Toque na foto que quiser usar 👇</p>
+        <div class="fotos-grid" id="fotos-grid"></div>
+      </div>
+
+      <div id="foto-upload-status" class="status" style="display:none"></div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="confirmarFoto()" id="btn-confirmar-foto" disabled>Enviar foto →</button>
+        <button class="btn" onclick="goStep2()">← Voltar</button>
+      </div>
+      <button class="btn full" onclick="buscarMaisFotos()" id="btn-mais-fotos" style="margin-top:8px;display:none;">🔄 Ver outras fotos</button>
+    </div>
+
+    <!-- PASSO 4 -->
+    <div class="card" id="step4" style="display:none">
+      <div class="card-label">🚀 Passo 4</div>
+      <div class="card-title">Publicar no NextSite</div>
+      <div class="preview-box">
+        <div class="preview-label">Título</div>
+        <div class="preview-titulo" id="conf-titulo">—</div>
+        <div class="preview-label">Prévia</div>
+        <div class="preview-texto" id="conf-preview">—</div>
+      </div>
+      <div class="publish-hint">✅ Texto copiado! No NextSite: cole o título, cole o texto, selecione a foto e publique! 🎉</div>
+      <div id="s4-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir NextSite</button>
+        <button class="btn" onclick="goStep3()">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" style="display:none">
+    <div class="card">
+      <div class="card-label">⚙️ Configurações</div>
+      <div class="card-title">Acesso ao NextSite</div>
+      <div class="field"><label>E-mail 📧</label><input type="email" id="cfg-user" placeholder="duda@diariodecuiaba.com.br" autocomplete="email" /></div>
+      <div class="field"><label>Senha 🔑</label><input type="password" id="cfg-pass" placeholder="••••••••" autocomplete="current-password" /></div>
+      <div class="divider"></div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:4px;font-weight:600;">Servidor</div>
+      <div class="url-mono">https://duda-news-server.onrender.com</div>
+      <div class="btn-row" style="margin-top:1rem;">
+        <button class="btn primary" onclick="salvarConfig()">💾 Salvar</button>
+        <button class="btn" onclick="testarServidor()">🔌 Testar</button>
+      </div>
+      <div id="cfg-status" class="status" style="display:none;margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SERVER = 'https://duda-news-server.onrender.com';
+const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
+
+let fotoSelecionadaUrl = null;
+let paginaFotos = 1;
+
+window.onload = () => {
+  document.getElementById('cfg-user').value = localStorage.getItem('duda_user') || '';
+  document.getElementById('cfg-pass').value = localStorage.getItem('duda_pass') || '';
+};
+
+function switchTab(t) {
+  document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
+  document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1))
+  );
+}
+
+function setProgress(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('ps' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    el.querySelector('.step-num').textContent = i < n ? '✓' : i;
+  }
+}
+
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'block'; el.className = 'status ' + type; el.innerHTML = msg;
+}
+function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
+
+function scrollToCard(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+}
+
+async function buscarMaterias() {
+  const btn = document.getElementById('btn-buscar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Buscando...';
+  document.getElementById('buscar-hint').textContent = 'Pode demorar até 30s na primeira vez...';
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> Buscando matérias...');
+  document.getElementById('news-list').innerHTML = '';
+  try {
+    const res = await fetch(`${SERVER}/materias`);
+    const data = await res.json();
+    hideStatus('s1-status');
+    document.getElementById('buscar-hint').textContent = '';
+    if (!data.ok || !data.materias?.length) {
+      showStatus('s1-status', 'error', '❌ ' + (data.erro || 'Nenhuma matéria encontrada.'));
+    } else {
+      renderMaterias(data.materias);
+      showStatus('s1-status', 'success', `🎉 ${data.total} matérias encontradas!`);
+    }
+  } catch(e) {
+    showStatus('s1-status', 'error', '❌ Erro ao conectar. Aguarde 30s e tente de novo.');
+    document.getElementById('buscar-hint').textContent = '';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Buscar matérias';
+}
+
+function getPublicadas() {
+  try { return JSON.parse(localStorage.getItem('tanaka_publicadas') || '[]'); } catch(e) { return []; }
+}
+function marcarPublicada(link) {
+  const lista = getPublicadas();
+  if (!lista.includes(link)) { lista.push(link); localStorage.setItem('tanaka_publicadas', JSON.stringify(lista)); }
+}
+
+function renderMaterias(lista) {
+  const div = document.getElementById('news-list');
+  div.innerHTML = '';
+  const publicadas = getPublicadas();
+  lista.forEach(m => {
+    const jaPublicada = publicadas.includes(m.link);
+    const item = document.createElement('div');
+    item.className = 'news-item';
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'news-text';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'news-title';
+    titleEl.textContent = m.titulo; // textContent — imune a aspas e caracteres especiais
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'news-time';
+    timeEl.textContent = (m.tempo || '') + (m.autor ? ' · ' + m.autor : '');
+
+    textDiv.appendChild(titleEl);
+    textDiv.appendChild(timeEl);
+    item.appendChild(textDiv);
+
+    if (jaPublicada) {
+      const tag = document.createElement('span');
+      tag.className = 'tag-publicada';
+      tag.textContent = '✓ Publicada';
+      item.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary small';
+      btn.textContent = 'Usar →';
+      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo));
+      item.appendChild(btn);
+    }
+    div.appendChild(item);
+  });
+}
+
+async function carregarMateria(link, titulo) {
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> Carregando texto completo...');
+  document.getElementById('edit-titulo').value = titulo;
+  document.getElementById('edit-texto').value = '';
+  try {
+    const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(link)}`);
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('edit-titulo').value = data.titulo || titulo;
+      document.getElementById('edit-titulo')._link = link;
+      document.getElementById('edit-texto').value = data.texto || '';
+      updateCount();
+      showStatus('s1-status', 'success', '✅ Matéria carregada! Revise e siga em frente 🌸');
+    } else {
+      showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
+    }
+  } catch(e) {
+    showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole manualmente.');
+  }
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(2);
+  scrollToCard('step2');
+}
+
+function goStep1() {
+  ['step2','step3','step4'].forEach(id => document.getElementById(id).style.display = 'none');
+  hideStatus('s1-status'); setProgress(1); scrollToCard('step1');
+}
+function goStep2() {
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(2); scrollToCard('step2');
+}
+
+async function goStep3() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  if (!titulo || !texto) {
+    showStatus('s2-status', 'error', '❌ Preencha o título e o texto antes de continuar!');
+    return;
+  }
+  hideStatus('s2-status');
+  // Reseta tudo do passo 3
+  fotoSelecionadaUrl = null;
+  paginaFotos = 1;
+  document.getElementById('btn-confirmar-foto').disabled = true;
+  document.getElementById('fotos-grid').innerHTML = '';
+  document.getElementById('btn-mais-fotos').style.display = 'none';
+  hideStatus('fotos-status');
+  hideStatus('foto-upload-status');
+
+  document.getElementById('step3').style.display = 'block';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(3);
+  scrollToCard('step3');
+  await carregarFotos(titulo, 1);
+}
+
+async function extrairPalavrasChave(titulo) {
+  const stopWords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem','que','se','o','a','os','as','um','uma','e','ou','mas','mais','foi','é','são','vence','venceu','bate','perde','empata','marca','sofre','leva','ganha']);
+  const palavras = titulo.replace(/[^\wÀ-ÿ\s]/g,' ').split(/\s+/)
+    .filter(p => p.length > 2 && !stopWords.has(p.toLowerCase()));
+  const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
+  const demais = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
+  return [...new Set([...proprias, ...demais])].slice(0, 5).join(' ');
+}
+
+async function carregarFotos(titulo, pagina) {
+  document.getElementById('fotos-loading').style.display = 'flex';
+  document.getElementById('fotos-hint').style.display = 'none';
+  document.getElementById('kw-info').style.display = 'none';
+  document.getElementById('fotos-grid').innerHTML = '';
+  document.getElementById('btn-mais-fotos').style.display = 'none';
+  fotoSelecionadaUrl = null;
+  document.getElementById('btn-confirmar-foto').disabled = true;
+
+  try {
+    const res = await fetch(`${SERVER}/buscar-fotos?titulo=${encodeURIComponent(titulo)}&pagina=${pagina}`);
+    const data = await res.json();
+    document.getElementById('fotos-loading').style.display = 'none';
+
+    if (!data.ok || !data.fotos?.length) {
+      showStatus('fotos-status', 'error', '❌ Não encontrei fotos. Tente de novo.');
+      return;
+    }
+
+    document.getElementById('kw-texto').textContent = data.palavrasChave || '';
+    document.getElementById('kw-info').style.display = 'block';
+    renderFotos(data.fotos);
+    document.getElementById('fotos-hint').style.display = 'block';
+    document.getElementById('btn-mais-fotos').style.display = 'flex';
+    document.getElementById('btn-mais-fotos').textContent = `🔄 Ver outras fotos (pág. ${pagina + 1})`;
+
+  } catch(e) {
+    document.getElementById('fotos-loading').style.display = 'none';
+    showStatus('fotos-status', 'error', '❌ Erro ao buscar fotos. Verifique a conexão.');
+  }
+}
+function renderFotos(urls) {
+  const grid = document.getElementById('fotos-grid');
+  grid.innerHTML = '';
+  urls.forEach((url, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'foto-opcao';
+    wrap.dataset.url = url;
+    const img = document.createElement('img');
+    img.src = url; img.alt = `Foto ${i+1}`; img.loading = 'lazy';
+    img.onerror = () => wrap.classList.add('erro');
+    wrap.appendChild(img);
+    wrap.addEventListener('click', () => selecionarFoto(url, wrap));
+    grid.appendChild(wrap);
+  });
+}
+
+function selecionarFoto(url, el) {
+  document.querySelectorAll('.foto-opcao').forEach(f => f.classList.remove('selecionada'));
+  el.classList.add('selecionada');
+  fotoSelecionadaUrl = url;
+  document.getElementById('btn-confirmar-foto').disabled = false;
+  hideStatus('foto-upload-status');
+}
+
+async function confirmarFoto() {
+  if (!fotoSelecionadaUrl) return;
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const btn = document.getElementById('btn-confirmar-foto');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Enviando...';
+  showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o NextSite...');
+  try {
+    const res = await fetch(`${SERVER}/upload-foto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fotoUrl: fotoSelecionadaUrl, titulo })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showStatus('foto-upload-status', 'success', '✅ Foto enviada para o NextSite! 🌸');
+      btn.innerHTML = '✅ Enviada!';
+      setTimeout(() => goStep4(), 900);
+    } else {
+      showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar'));
+      btn.disabled = false;
+      btn.innerHTML = 'Enviar foto →';
+    }
+  } catch(e) {
+    showStatus('foto-upload-status', 'error', '❌ Erro de conexão. Tente de novo.');
+    btn.disabled = false;
+    btn.innerHTML = 'Enviar foto →';
+  }
+}
+
+async function buscarMaisFotos() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  paginaFotos += 1;
+  await carregarFotos(titulo, paginaFotos);
+}
+
+function goStep4() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  document.getElementById('conf-titulo').textContent = titulo;
+  document.getElementById('conf-preview').textContent = texto.substring(0, 300) + (texto.length > 300 ? '...' : '');
+  navigator.clipboard.writeText(`TÍTULO:\n${titulo}\n\nTEXTO:\n${texto}`).catch(() => {});
+  document.getElementById('step4').style.display = 'block';
+  setProgress(4);
+  scrollToCard('step4');
+}
+
+async function copiarEAbrir() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  try { await navigator.clipboard.writeText(titulo + '\n\n' + texto); } catch(e) {}
+  const chapeu = document.getElementById('edit-chapeu').value;
+  const json = JSON.stringify({ titulo, texto, chapeu });
+  const dados = btoa(unescape(encodeURIComponent(json)));
+  const url = NEXTSITE + '&tanaka=' + dados;
+  const linkAtual = document.getElementById('edit-titulo')._link || '';
+  if (linkAtual) marcarPublicada(linkAtual);
+  showStatus('s4-status', 'success', '🎉 Abrindo NextSite — formulário preenchido automaticamente!');
+  setTimeout(() => window.open(url, '_blank'), 400);
+  const btn = document.getElementById('btn-publicar');
+  btn.textContent = '✅ Abrindo!';
+  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir NextSite'; }, 3000);
+}
+
+function updateCount() {
+  document.getElementById('char-count').textContent =
+    document.getElementById('edit-texto').value.length.toLocaleString('pt-BR') + ' caracteres';
+}
+function salvarConfig() {
+  localStorage.setItem('duda_user', document.getElementById('cfg-user').value.trim());
+  localStorage.setItem('duda_pass', document.getElementById('cfg-pass').value);
+  showStatus('cfg-status', 'success', '💾 Salvo com sucesso!');
+  setTimeout(() => hideStatus('cfg-status'), 2000);
+}
+async function testarServidor() {
+  showStatus('cfg-status', 'loading', '<span class="spinner"></span> Testando conexão...');
+  try {
+    const res = await fetch(`${SERVER}/`);
+    const data = await res.json();
+    showStatus('cfg-status', 'success', '🟢 ' + data.message);
+  } catch(e) {
+    showStatus('cfg-status', 'error', '🔴 Servidor offline. Aguarde 30s e tente de novo.');
+  }
+}
+</script>
+</body>
+</html>
