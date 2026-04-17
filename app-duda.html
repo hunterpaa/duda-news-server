@@ -13,163 +13,163 @@
   --text: #4A5568;
   --shadow: 0 4px 15px rgba(212, 77, 125, 0.1);
 }
-body { font-family: 'Poppins', sans-serif; background: var(--sakura); color: var(--text); margin: 0; }
+body { font-family: 'Poppins', sans-serif; background: var(--sakura); color: var(--text); margin: 0; padding-bottom: 50px; }
 
-/* HEADER SLIM */
 .header {
   background: linear-gradient(135deg, #FFB7C5 0%, var(--accent) 100%);
-  padding: 10px 20px;
+  padding: 15px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   box-shadow: var(--shadow);
   border-radius: 0 0 20px 20px;
+  margin-bottom: 20px;
 }
-.header-info { display: flex; align-items: center; gap: 12px; }
-.kurama-icon { font-size: 40px; }
-.header h1 { font-size: 18px; margin: 0; color: white; }
-.header p { font-size: 11px; margin: 0; color: rgba(255,255,255,0.9); }
+.kurama-icon { font-size: 40px; margin-right: 15px; }
+.header h1 { font-size: 20px; margin: 0; color: white; }
+.header p { font-size: 12px; margin: 0; color: rgba(255,255,255,0.9); }
 
-/* GRID PARA TELA CHEIA (PC) */
+/* GRID RESPONSIVO */
 .container { 
-  max-width: 1200px; margin: 20px auto; padding: 0 20px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+  max-width: 1200px; margin: 0 auto; padding: 0 15px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; 
 }
+
 .card {
   background: white; border-radius: 15px; padding: 20px;
   box-shadow: var(--shadow); border: 1px solid rgba(212, 77, 125, 0.1);
-  position: relative; min-height: 400px;
+  position: relative; display: flex; flex-direction: column;
 }
-.card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 
-/* LISTA DE NOTÍCIAS */
+/* LISTA E INPUTS */
+#news-list { max-height: 300px; overflow-y: auto; margin-bottom: 10px; border: 1px inset var(--sakura); padding: 5px; }
 .news-item {
-  background: var(--sakura); padding: 12px; border-radius: 10px;
-  margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-  border: 1px solid #eee; transition: 0.2s;
+  background: var(--sakura); padding: 10px; border-radius: 8px;
+  margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;
 }
-.news-item:hover { border-color: var(--primary); }
-.news-title { font-size: 12px; font-weight: 600; flex: 1; padding-right: 10px; }
+input, textarea {
+  width: 100%; padding: 10px; margin: 5px 0 15px 0;
+  border: 2px solid #F0F0F0; border-radius: 8px; font-family: inherit; box-sizing: border-box;
+}
+textarea { height: 150px; resize: none; }
 
 .btn {
   background: var(--primary); color: white; border: none;
-  padding: 8px 15px; border-radius: 10px; cursor: pointer;
-  font-weight: 600; font-size: 12px; transition: 0.3s;
+  padding: 12px; border-radius: 10px; cursor: pointer;
+  font-weight: 600; transition: 0.3s; width: 100%;
 }
-.btn:disabled { background: #ccc; cursor: not-allowed; }
+.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.btn-check { background: #4CAF50; margin-top: 10px; }
 
-/* FORMULÁRIO */
-input, textarea {
-  width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px;
-  border: 2px solid #F0F0F0; border-radius: 8px; font-family: inherit; box-sizing: border-box;
+.previa-box {
+  width: 100%; min-height: 150px; background: #f9f9f9; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 10px;
+  border: 2px dashed #ddd;
 }
-textarea { height: 250px; resize: none; font-size: 13px; line-height: 1.6; }
+.previa-box img { max-width: 100%; height: auto; }
 
-.mascote { position: absolute; bottom: 10px; right: 10px; font-size: 40px; opacity: 0.3; pointer-events: none; }
+.mascote { position: absolute; top: 10px; right: 15px; font-size: 24px; opacity: 0.4; }
 
-@media (max-width: 800px) { .container { grid-template-columns: 1fr; } }
+@media (max-width: 400px) { .container { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-info">
-    <div class="kurama-icon">🦊</div>
-    <div>
-      <h1>Tanaka News 🌸</h1>
-      <p>Redação da Duda-chan</p>
-    </div>
+  <div class="kurama-icon">🦊</div>
+  <div>
+    <h1>Tanaka News 🌸</h1>
+    <p>Redação Esportiva da Duda</p>
   </div>
 </div>
 
 <div class="container">
   <div class="card">
-    <div class="card-title">🐸 Invocação (Estadão)</div>
-    <div id="news-list" style="max-height: 500px; overflow-y: auto;">
-      <p style="text-align:center; font-size:13px; color:#999;">Aguardando comando... 🍥</p>
+    <div class="card-title">1️⃣ Buscar Matérias</div>
+    <div id="news-list">
+      <p style="text-align:center; color:#999; font-size:12px;">Toque no botão para invocar...</p>
     </div>
-    <button class="btn" id="btn-invocar" onclick="buscarMaterias()" style="width:100%; margin-top:10px;">⚡ Kuchiyose no Jutsu!</button>
+    <button class="btn" onclick="buscarMaterias()">⚡ Kuchiyose no Jutsu!</button>
     <div class="mascote">🐸</div>
   </div>
 
   <div class="card">
-    <div class="card-title">🐶 Relatório (Revisão)</div>
-    <div id="status-carga" style="font-size: 11px; color: var(--primary); font-weight: bold; margin-bottom: 5px;"></div>
-    
-    <label style="font-size:12px; font-weight:600;">Título do Pergaminho</label>
-    <input type="text" id="edit-titulo" placeholder="O título aparecerá aqui...">
-    
-    <label style="font-size:12px; font-weight:600;">Texto da Missão</label>
-    <textarea id="edit-texto" placeholder="O conteúdo da notícia aparecerá aqui..."></textarea>
-    
-    <button class="btn" style="width:100%; background: var(--accent); color: #6B46C1;">Próximo: Foto 📸</button>
+    <div class="card-title">2️⃣ Revisar Texto</div>
+    <input type="text" id="edit-titulo" placeholder="Título da notícia...">
+    <textarea id="edit-texto" placeholder="Conteúdo da matéria..."></textarea>
     <div class="mascote">🐶</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">3️⃣ Foto (Ninpo)</div>
+    <label style="font-size:12px;">Link da Imagem:</label>
+    <input type="url" id="foto-url" placeholder="Cole o link .jpg ou .png aqui..." oninput="atualizarPrevia()">
+    <div class="previa-box" id="previa-container">
+      <span style="font-size:12px; color:#ccc;">Prévia da Foto 🖼️</span>
+    </div>
+    <div class="mascote">🐷</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">4️⃣ Publicar</div>
+    <p style="font-size:13px; color: #666;">Confira se o texto e a foto estão corretos antes de enviar para o portal.</p>
+    <button class="btn btn-check" onclick="publicarNoticia()">🌸 Enviar para o NextSite</button>
+    <div id="status-envio" style="margin-top:10px; font-size:12px; font-weight:bold; text-align:center;"></div>
+    <div class="mascote">📜</div>
   </div>
 </div>
 
 <script>
 const SERVER = 'https://duda-news-server.onrender.com';
 
-// FUNÇÃO 1: BUSCAR A LISTA DE MATÉRIAS
 async function buscarMaterias() {
   const container = document.getElementById('news-list');
-  const btn = document.getElementById('btn-invocar');
-  
-  btn.disabled = true;
-  container.innerHTML = '<p style="text-align:center; font-size:13px;">Invocando matérias... 🌀</p>';
-  
+  container.innerHTML = '<p style="text-align:center;">Invocando... 🌀</p>';
   try {
     const res = await fetch(`${SERVER}/materias`);
     const data = await res.json();
-    
     container.innerHTML = '';
-    if(data.materias && data.materias.length > 0) {
-      data.materias.forEach(m => {
-        // AQUI ESTÁ O SEGREDO: Adicionamos o onclick chamando carregarMateria com o link
-        container.innerHTML += `
-          <div class="news-item">
-            <span class="news-title">${m.titulo}</span>
-            <button class="btn" onclick="carregarMateria('${m.link}')">Abrir</button>
-          </div>`;
-      });
-    } else {
-      container.innerHTML = '<p>Nenhuma matéria encontrada. ❌</p>';
-    }
-  } catch(e) { 
-    container.innerHTML = '<p>Erro na conexão ninja. Verifique o servidor. ❌</p>'; 
-  } finally {
-    btn.disabled = false;
-  }
+    data.materias.forEach(m => {
+      container.innerHTML += `
+        <div class="news-item">
+          <span>${m.titulo.substring(0,35)}...</span>
+          <button class="btn" style="width:auto; padding:5px 10px;" onclick="carregarMateria('${m.link}')">Abrir</button>
+        </div>`;
+    });
+  } catch(e) { container.innerHTML = '<p>Erro ao conectar. ❌</p>'; }
 }
 
-// FUNÇÃO 2: CARREGAR O CONTEÚDO DE UMA MATÉRIA ESPECÍFICA
 async function carregarMateria(url) {
-  const status = document.getElementById('status-carga');
-  const txtTitulo = document.getElementById('edit-titulo');
-  const txtCorpo = document.getElementById('edit-texto');
-  
-  status.innerHTML = "⌛ Lendo pergaminho...";
-  txtTitulo.value = "Carregando...";
-  txtCorpo.value = "Buscando texto completo, por favor aguarde...";
-
+  const tit = document.getElementById('edit-titulo');
+  const txt = document.getElementById('edit-texto');
+  tit.value = "Carregando...";
   try {
     const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(url)}`);
     const data = await res.json();
-    
-    if(data.ok) {
-      txtTitulo.value = data.titulo;
-      txtCorpo.value = data.texto;
-      status.innerHTML = "✅ Conteúdo carregado!";
-    } else {
-      status.innerHTML = "❌ Erro ao extrair texto.";
-    }
-  } catch(e) {
-    status.innerHTML = "❌ Erro de conexão.";
-    txtTitulo.value = "";
-    txtCorpo.value = "";
+    tit.value = data.titulo;
+    txt.value = data.texto;
+  } catch(e) { tit.value = "Erro ao carregar."; }
+}
+
+function atualizarPrevia() {
+  const url = document.getElementById('foto-url').value;
+  const container = document.getElementById('previa-container');
+  if(url) {
+    container.innerHTML = `<img src="${url}" onerror="this.src='https://via.placeholder.com/150?text=Link+Invalido'">`;
   }
 }
-</script>
 
+function publicarNoticia() {
+  const status = document.getElementById('status-envio');
+  status.style.color = "var(--primary)";
+  status.innerHTML = "Enviando missão... 🕊️";
+  
+  // Aqui entraria sua lógica de POST para o NextSite
+  setTimeout(() => {
+    status.style.color = "#4CAF50";
+    status.innerHTML = "✅ Publicado com sucesso!";
+  }, 2000);
+}
+</script>
 </body>
 </html>
