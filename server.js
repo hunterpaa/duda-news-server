@@ -196,101 +196,87 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── BUSCAR FOTOS ──────────────────────────────────────────────────────────────
-// ?titulo=...&pagina=1  (pagina 1,2,3... para o botão "Outras fotos")
+// Estratégia: Google News RSS → pega os primeiros resultados do dia →
+// extrai og:image de cada matéria → fotos 100% relacionadas ao assunto
 app.get('/buscar-fotos', async (req, res) => {
   const { titulo, pagina = '1' } = req.query;
   if (!titulo) return res.status(400).json({ ok: false, erro: 'titulo é obrigatório' });
 
   const pg = Math.max(1, parseInt(pagina) || 1);
   const palavrasChave = extrairPalavrasChave(titulo);
-  const bingFirst = (pg - 1) * 6 + 1;
+  const query = encodeURIComponent(palavrasChave);
 
-  // Tentativa 1: Bing Images com paginação real via ?first=
+  // Google News RSS — retorna notícias recentes em XML, sem API key
+  const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=pt-BR&gl=BR&ceid=BR:pt-BR`;
+
+  let links = [];
   try {
-    const bingUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(palavrasChave)}&form=HDRSC2&first=${bingFirst}&count=6`;
-    const response = await axios.get(bingUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-        'Referer': 'https://www.bing.com/',
-      },
-      timeout: 15000,
-    });
-
-    const $ = cheerio.load(response.data);
-    const fotos = [];
-
-    $('.iusc').each((i, el) => {
-      if (fotos.length >= 6) return false;
-      try {
-        const m = $(el).attr('m');
-        if (!m) return;
-        const dados = JSON.parse(m);
-        const url = dados.murl;
-        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-          fotos.push(url);
-        }
-      } catch (e) { /* ignora */ }
-    });
-
-    if (fotos.length === 0) {
-      $('img.mimg').each((i, el) => {
-        if (fotos.length >= 6) return false;
-        const src = $(el).attr('src') || $(el).attr('data-src');
-        if (src && src.startsWith('http') && !src.includes('bing.com')) {
-          fotos.push(src);
-        }
-      });
-    }
-
-    if (fotos.length > 0) {
-      return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'bing' });
-    }
-  } catch (e) {
-    console.error('Bing falhou:', e.message);
-  }
-
-  // Tentativa 2: DuckDuckGo Images com offset de página
-  try {
-    const ddgUrl = `https://duckduckgo.com/?q=${encodeURIComponent(palavrasChave)}&iax=images&ia=images`;
-    const tokenRes = await axios.get(ddgUrl, {
+    const rssRes = await axios.get(rssUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
+        'Accept': 'application/rss+xml, application/xml, text/xml',
       },
       timeout: 10000,
     });
 
-    const vqdMatch = tokenRes.data.match(/vqd=([\d-]+)/);
-    if (vqdMatch) {
-      const vqd = vqdMatch[1];
-      const ddgOffset = (pg - 1) * 6;
-      const apiUrl = `https://duckduckgo.com/i.js?q=${encodeURIComponent(palavrasChave)}&vqd=${vqd}&f=,,,,,&p=1&s=${ddgOffset}`;
-      const imgRes = await axios.get(apiUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Referer': 'https://duckduckgo.com/',
-          'Accept': 'application/json',
-        },
-        timeout: 10000,
-      });
+    const $ = cheerio.load(rssRes.data, { xmlMode: true });
 
-      const resultados = imgRes.data?.results || [];
-      const fotos = resultados
-        .slice(0, 6)
-        .map(r => r.image)
-        .filter(url => url && url.startsWith('http'));
-
-      if (fotos.length > 0) {
-        return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'duckduckgo' });
-      }
-    }
+    // Cada <item> tem um <link> com a URL da matéria
+    // Paginação: pula os primeiros (pg-1)*6 resultados
+    const offset = (pg - 1) * 6;
+    $('item').each((i, el) => {
+      if (i < offset) return;
+      if (links.length >= 8) return false; // pega 8 para ter margem de falha
+      const link = $(el).find('link').text().trim()
+        || $(el).find('guid').text().trim();
+      if (link && link.startsWith('http')) links.push(link);
+    });
   } catch (e) {
-    console.error('DuckDuckGo falhou:', e.message);
+    console.error('RSS falhou:', e.message);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível buscar notícias.' });
   }
 
-  return res.status(500).json({ ok: false, erro: 'Não foi possível buscar fotos. Tente de novo.' });
+  if (links.length === 0) {
+    return res.status(500).json({ ok: false, erro: 'Nenhuma notícia encontrada para esse tema.' });
+  }
+
+  // Para cada link, extrai o og:image da matéria
+  const fotos = [];
+  await Promise.allSettled(
+    links.map(async (link) => {
+      try {
+        const pageRes = await axios.get(link, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            'Referer': 'https://news.google.com/',
+          },
+          timeout: 8000,
+          maxRedirects: 5,
+        });
+
+        const $ = cheerio.load(pageRes.data);
+
+        // og:image é a meta tag padrão de foto em todo site de notícia
+        const ogImage = $('meta[property="og:image"]').attr('content')
+          || $('meta[name="twitter:image"]').attr('content')
+          || $('meta[itemprop="image"]').attr('content');
+
+        if (ogImage && ogImage.startsWith('http') && fotos.length < 6) {
+          fotos.push(ogImage);
+        }
+      } catch (e) {
+        // ignora links que falharem
+      }
+    })
+  );
+
+  if (fotos.length === 0) {
+    return res.status(500).json({ ok: false, erro: 'Não foi possível extrair fotos das notícias.' });
+  }
+
+  return res.json({ ok: true, total: fotos.length, fotos, palavrasChave, pagina: pg, fonte: 'google-news' });
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
