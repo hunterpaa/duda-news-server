@@ -4,754 +4,373 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Tanaka Sports ⚽</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Tanaka News: Edição Shinobi 🌸</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-/* ── RESETS E VARIÁVEIS ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  /* Paleta de Cores */
-  --bg-color: #F7F9FC;
-  --card-color: #FFFFFF;
-  --text-main: #2D3748;
-  --text-sub: #718096;
-  --primary: #E53E3E; /* Vermelho Tanaka */
-  --primary-dark: #C53030;
-  --primary-light: #FFF5F5;
-  --accent: #D6BCFA; /* Lavanda Suave */
-  --success: #38A169;
-  --error: #E53E3E;
-  
-  /* Estilos */
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --btn-h: 56px;
-  --input-h: 56px;
-  --font-main: 'Poppins', sans-serif;
-  --font-sub: 'Inter', sans-serif;
+  /* Paleta Sakura & Lavanda */
+  --bg-sakura: #FFF5F7;
+  --sakura-pink: #FFB7C5; /* Rosa Cerejeira */
+  --sakura-dark: #D44D7D;
+  --lavender: #E0BBE4;
+  --lavender-dark: #957DAD;
+  --white: #FFFFFF;
+  --text: #4A4A4A;
+  --radius: 20px;
+  --shadow: 0 8px 20px rgba(212, 77, 125, 0.1);
 }
-html { -webkit-text-size-adjust: 100%; }
-body { font-family: var(--font-main); background: var(--bg-color); color: var(--text-main); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
 
-/* ── HEADER ── */
-.header-bar {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-radius: 0 0 var(--radius) var(--radius);
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Poppins', sans-serif; background: var(--bg-sakura); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+
+/* ── HEADER NINJA ── */
+.header {
+  background: linear-gradient(135deg, var(--sakura-pink), var(--lavender));
+  padding: 30px 20px;
+  text-align: center;
+  border-radius: 0 0 40px 40px;
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
-.logo-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  flex-shrink: 0;
-  border: 3px solid rgba(255,255,255,0.3);
+.header h1 { color: white; font-size: 26px; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+.header p { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500; }
+
+/* Mascote flutuante no topo (Kyubi Bebê) */
+.kyubi-top {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 80px;
+  opacity: 0.8;
 }
-.header-texts h1 { font-size: 24px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-.header-texts p { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 2px; }
 
-/* ── APP CONTAINER ── */
-.app { max-width: 600px; margin: 1rem auto; padding: 0 1rem; padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
-
-/* ── TABS ── */
-.tabs { display: flex; gap: 12px; margin-bottom: 1.5rem; }
+/* ── NAVEGAÇÃO (TABS) ── */
+.tabs { display: flex; gap: 10px; padding: 20px; max-width: 600px; margin: 0 auto; }
 .tab {
-  flex: 1;
-  height: 50px;
-  font-size: 16px;
-  cursor: pointer;
-  border: 2px solid var(--primary);
-  background: white;
-  color: var(--primary);
-  border-radius: 25px;
-  font-family: inherit;
-  font-weight: 600;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
+  flex: 1; padding: 12px; border: none; border-radius: 15px;
+  background: white; color: var(--sakura-dark); font-weight: 700;
+  box-shadow: var(--shadow); cursor: pointer; transition: 0.3s;
 }
-.tab.active { background: var(--primary); color: white; box-shadow: var(--shadow); }
-
-/* ── STEPS ── */
-.steps {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 8px 4px;
-}
-.steps::-webkit-scrollbar { display: none; }
-.step {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--text-sub);
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.step.done { color: var(--accent); }
-.step.active { color: var(--primary); font-weight: 700; }
-.step-num {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.step.done .step-num { background: var(--accent); border-color: var(--accent); color: white; font-size: 10px; }
-.step.active .step-num { background: var(--primary-light); }
-.arrow { color: #CBD5E0; font-size: 16px; flex-shrink: 0; }
+.tab.active { background: var(--sakura-dark); color: white; }
 
 /* ── CARDS ── */
+.container { max-width: 500px; margin: 0 auto; padding: 0 20px; }
 .card {
-  background: var(--card-color);
-  border: 1px solid #E2E8F0;
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow);
-  transition: all 0.2s ease;
+  background: white; border-radius: var(--radius); padding: 25px;
+  margin-bottom: 25px; box-shadow: var(--shadow); position: relative;
+  border: 2px solid rgba(255, 183, 197, 0.3);
 }
-.card-label { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.card-title { font-size: 18px; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-main); }
+.step-title { color: var(--sakura-dark); font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+.japanese-title { font-size: 10px; text-transform: uppercase; color: var(--lavender-dark); display: block; }
 
-/* ── NEWS LIST ── */
-.news-list { display: flex; flex-direction: column; gap: 12px; }
+/* ── BICHINHOS DO NARUTO (GIFS) ── */
+.mascote-gif { width: 60px; height: 60px; object-fit: contain; }
+.loading-box { text-align: center; padding: 20px; }
+.loading-kurama { width: 100px; animation: pulse 1.5s infinite; }
+
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+/* ── FORMULÁRIOS ── */
+input, textarea, select {
+  width: 100%; padding: 15px; border-radius: 15px;
+  border: 2px solid var(--bg-sakura); background: #FFF9FA;
+  font-family: 'Inter', sans-serif; font-size: 15px; margin-top: 8px;
+  transition: 0.3s;
+}
+input:focus { outline: none; border-color: var(--sakura-pink); background: white; }
+
+/* ── BOTÕES JUTSU ── */
+.btn-jutsu {
+  width: 100%; padding: 18px; border: none; border-radius: 50px;
+  background: linear-gradient(to right, var(--sakura-dark), var(--lavender-dark));
+  color: white; font-weight: 700; font-size: 16px; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(212, 77, 125, 0.3); transition: 0.3s;
+  margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-jutsu:active { transform: scale(0.95); }
+.btn-jutsu:disabled { background: #CCC; opacity: 0.6; }
+
+/* ── ITENS DE NOTÍCIA ── */
 .news-item {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 1rem;
-  border: 1px solid #E2E8F0;
-  border-radius: var(--radius-sm);
-  background: white;
-  transition: all 0.2s;
+  background: #FFF9FA; padding: 15px; border-radius: 15px; margin-bottom: 12px;
+  border: 1px solid var(--sakura-pink); display: flex; justify-content: space-between; align-items: center;
 }
-.news-item:hover { border-color: var(--accent); background: #FAF5FF; }
-.news-text { flex: 1; min-width: 0; }
-.news-title { font-size: 16px; font-weight: 600; line-height: 1.5; margin-bottom: 4px; color: var(--text-main); word-break: break-word; font-family: var(--font-sub); }
-.news-time { font-size: 12px; color: var(--text-sub); }
-.tag-publicada { font-size: 12px; background: #FAF5FF; color: var(--accent); padding: 6px 10px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+.news-title { font-size: 14px; font-weight: 600; color: #555; flex: 1; padding-right: 10px; }
 
-/* ── BOTÕES ── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: var(--btn-h);
-  padding: 0 24px;
-  border-radius: 28px;
-  border: 2px solid #E2E8F0;
-  background: white;
-  font-size: 16px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--text-main);
-  transition: all 0.2s;
-  text-decoration: none;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+/* ── STATUS ── */
+.status-bubble {
+  padding: 12px; border-radius: 15px; font-size: 13px; margin-top: 15px;
+  display: flex; align-items: center; gap: 10px; font-weight: 500;
 }
-.btn:active { opacity: 0.8; transform: scale(0.97); }
-.btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
-.btn.primary:hover { background: var(--primary-dark); }
-.btn.purple { background: var(--accent); color: white; border-color: var(--accent); }
-.btn.small { height: 44px; padding: 0 16px; font-size: 14px; border-radius: 22px; }
-.btn.full { width: 100%; }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.status-success { background: #E7F9ED; color: #2D6A4F; border: 1px solid #95D5B2; }
+.status-error { background: #FFF0F0; color: #A4161A; border: 1px solid #FFB3B3; }
 
-.btn-row { display: flex; gap: 12px; margin-top: 1.5rem; flex-wrap: wrap; }
-.btn-row .btn.primary, .btn-row .btn.purple { flex: 1; }
+/* Sugestão de nome */
+.sugestao { font-size: 11px; background: var(--lavender); color: white; padding: 4px 10px; border-radius: 10px; cursor: pointer; display: inline-block; margin-top: 5px; }
 
-/* ── CAMPOS DE INPUT ── */
-.field { margin-bottom: 1.5rem; }
-label { font-size: 14px; color: var(--text-sub); display: block; margin-bottom: 8px; font-weight: 600; }
-input[type=text], input[type=password], input[type=email], input[type=url] {
-  width: 100%;
-  height: var(--input-h);
-  border: 2px solid #E2E8F0;
-  border-radius: var(--radius-sm);
-  padding: 0 16px;
-  font-size: 16px;
-  font-family: var(--font-sub);
-  background: white;
-  transition: border-color 0.2s;
-}
-input:focus { outline: none; border-color: var(--accent); }
-
-textarea {
-  width: 100%;
-  border: 2px solid #E2E8F0;
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  font-size: 16px;
-  font-family: var(--font-sub);
-  line-height: 1.7;
-  resize: vertical;
-  background: white;
-  min-height: 250px;
-}
-textarea:focus { outline: none; border-color: var(--accent); }
-.char-count { font-size: 12px; color: var(--text-sub); text-align: right; margin-top: 6px; }
-
-/* ── STATUS E MENSAGENS ── */
-.status { padding: 1rem; border-radius: var(--radius-sm); font-size: 15px; margin-top: 1rem; line-height: 1.5; font-weight: 500; font-family: var(--font-sub); }
-.status.info { background: #EBF8FF; color: #3182CE; border: 1px solid #BEE3F8; }
-.status.success { background: #F0FFF4; color: var(--success); border: 1px solid #C6F6D5; }
-.status.error { background: #FFF5F5; color: var(--error); border: 1px solid #FED7D7; }
-.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── CAMPO LEGENDA / NOME FOTO MODERNO ── */
-.nome-foto-box {
-  background: #FFFBEB;
-  border: 2px solid #F6E05E;
-  border-radius: var(--radius-sm);
-  padding: 1.25rem;
-  margin-top: 1rem;
-}
-.nome-foto-box label { color: #B7791F; margin-bottom: 6px; }
-.nome-foto-hint { font-size: 12px; color: #A0AEC0; margin-top: 6px; }
-.sugestao-tag {
-  display: inline-block;
-  background: #FEFCBF;
-  color: #B7791F;
-  border: 1px solid #F6E05E;
-  border-radius: 20px;
-  font-size: 12px;
-  padding: 4px 10px;
-  font-weight: 600;
-  margin-top: 6px;
-  cursor: pointer;
-}
-
-/* ── UPLOAD FOTO MODERNO ── */
-.foto-input-container {
-  background: #F0F7FF;
-  border: 2px solid #BEE3F8;
-  border-radius: var(--radius-sm);
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-}
-.foto-input-container label { color: #3182CE; margin-bottom: 10px; }
-.foto-input-container input { border-color: #BEE3F8; }
-.aviso-url { font-size: 13px; color: #DD6B20; margin-top: 8px; display: none; font-weight: 600; background: #FFFAF0; padding: 10px; border-radius: var(--radius-sm); border: 1px solid #FBD38D; }
-
-/* ── PREVIEW FOTO ── */
-.preview-box {
-  background: #F7FAFC;
-  border-radius: var(--radius-sm);
-  padding: 1.25rem;
-  margin-bottom: 1.25rem;
-  border: 1px solid #E2E8F0;
-}
-.preview-titulo { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
-.preview-texto { font-size: 14px; line-height: 1.65; color: var(--text-sub); }
-
-.publish-hint { background: #FAF5FF; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 1rem; font-size: 15px; color: var(--accent); line-height: 1.6; margin-bottom: 1rem; font-weight: 500; font-family: var(--font-sub); }
-
-/* ── DIVISOR E OUTROS ── */
-.divider { border: none; border-top: 2px dashed #E2E8F0; margin: 1.5rem 0; }
-.url-mono { font-size: 12px; font-family: monospace; background: #F7FAFC; padding: 10px 14px; border-radius: 8px; color: var(--text-sub); word-break: break-all; border: 1px solid #E2E8F0; }
-#buscar-hint { font-size: 12px; color: var(--text-sub); display: block; margin-top: 8px; text-align: center; }
-
-@media (min-width: 600px) {
-  .btn-row .btn.primary, .btn-row .btn.purple { flex: none; }
-  .btn.full { width: auto; }
-}
 </style>
 </head>
 <body>
 
-<div class="header-bar">
-  <div class="logo-circle">⚽</div>
-  <div class="header-texts">
-    <h1>Tanaka Sports</h1>
-    <p>Redação esportiva da Duda 🌸</p>
-  </div>
-  <div class="header-badge"><div class="dot-online"></div> online</div>
+<div class="header">
+    <img src="https://i.pinimg.com/originals/f6/4a/0b/f64a0b63b96646549a888a70566378e9.png" class="kyubi-top" alt="Kyubi">
+    <p>SECRETARIA DA VILA DA FOLHA</p>
+    <h1>Tanaka News 🌸</h1>
+    <p>Edição Especial para Duda-chan</p>
 </div>
 
-<div class="app">
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('publicar')">✏️ Publicar</button>
-    <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
-  </div>
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('publicar')">📜 Missões</button>
+    <button class="tab" onclick="switchTab('config')">⚙️ Gama-chan</button>
+</div>
 
-  <div id="tab-publicar">
-    <div class="steps">
-      <div class="step active" id="ps1"><div class="step-num">1</div> Buscar Materias</div>
-      <span class="arrow">›</span>
-      <div class="step" id="ps2"><div class="step-num">2</div> Revisar</div>
-      <span class="arrow">›</span>
-      <div class="step" id="ps3"><div class="step-num">3</div> Foto</div>
-      <span class="arrow">›</span>
-      <div class="step" id="ps4"><div class="step-num">4</div> Publicar</div>
-    </div>
-
+<div class="container" id="tab-publicar">
+    
     <div class="card" id="step1">
-      <div class="card-label">📰 Passo 1</div>
-      <div class="card-title">Últimas matérias do Estadão</div>
-      <div class="news-list" id="news-list">
-        <div style="font-size:15px;color:var(--text-sub);padding:24px 0;text-align:center;font-family:var(--font-sub);">Toque em buscar para carregar 🏃‍♀️</div>
-      </div>
-      <div id="s1-status" class="status" style="display:none"></div>
-      <button class="btn primary full" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1.5rem;">⚡ Buscar matérias</button>
-      <span id="buscar-hint"></span>
+        <div class="step-title">
+            <img src="https://media.tenor.com/D8aA308B_dIAAAAi/naruto-frog.gif" class="mascote-gif" alt="Gama">
+            <div>
+                <span class="japanese-title">Kuchiyose no Jutsu</span>
+                Invocação de Notícias
+            </div>
+        </div>
+        
+        <div id="news-list">
+            <div style="text-align:center; color:#999; padding:20px;">Pronta para a próxima missão?</div>
+        </div>
+
+        <button class="btn-jutsu" onclick="buscarMaterias()" id="btn-buscar">
+            ✨ Concentrar Chakra (Buscar)
+        </button>
+        <div id="s1-status" class="status-bubble" style="display:none"></div>
     </div>
 
     <div class="card" id="step2" style="display:none">
-      <div class="card-label">✍️ Passo 2</div>
-      <div class="card-title">Revisar e editar a matéria</div>
-      <div class="field">
-        <label>Chapéu (categoria)</label>
+        <div class="step-title">
+            <img src="https://media.tenor.com/L1L_6vE0B6IAAAAi/pakkun-naruto.gif" class="mascote-gif" alt="Pakkun">
+            <div>
+                <span class="japanese-title">Chunin Shiken</span>
+                Revisão Ninja
+            </div>
+        </div>
+        
+        <label>Chapéu da Vila</label>
         <select id="edit-chapeu">
-          <option value="Futebol">Futebol</option>
-          <option value="Basquete">Basquete</option>
-          <option value="Vôlei">Vôlei</option>
-          <option value="Tênis">Tênis</option>
-          <option value="Fórmula 1">Fórmula 1</option>
-          <option value="Outros">Outros</option>
+            <option value="Futebol">Futebol ⚽</option>
+            <option value="Basquete">Basquete 🏀</option>
+            <option value="Outros">Outros 🍥</option>
         </select>
-      </div>
-      <div class="field">
-        <label>Título 📝</label>
-        <input type="text" id="edit-titulo" autocomplete="off" />
-      </div>
-      <div class="field">
-        <label>Texto completo 📄</label>
-        <textarea id="edit-texto" rows="12" oninput="updateCount()"></textarea>
-        <div class="char-count" id="char-count">0 caracteres</div>
-      </div>
-      <div id="s2-status" class="status" style="display:none"></div>
-      <div class="btn-row">
-        <button class="btn primary" onclick="goStep3()">Próximo: Foto 📸 →</button>
-        <button class="btn" onclick="goStep1()">← Voltar</button>
-      </div>
+
+        <label>Título do Pergaminho</label>
+        <input type="text" id="edit-titulo">
+
+        <label>Relato da Missão (Texto)</label>
+        <textarea id="edit-texto" rows="8"></textarea>
+        
+        <button class="btn-jutsu" onclick="goStep3()">Próximo: Jutsu de Imagem 📸</button>
+        <button class="btn-jutsu" style="background:#EEE; color:#888; margin-top:10px;" onclick="goStep1()">Voltar</button>
     </div>
 
     <div class="card" id="step3" style="display:none">
-      <div class="card-label">🖼️ Passo 3</div>
-      <div class="card-title">Adicionar foto da matéria</div>
-
-      <div style="background:#EBF8FF;border:2px solid #BEE3F8;border-radius:var(--radius-sm);padding:1.25rem;margin-bottom:1.25rem;">
-        <p style="font-size:15px;color:#2C5282;margin-bottom:12px;line-height:1.6;font-family:var(--font-sub);">
-          Abra o Google Imagens com a busca pronta. Toque e segure na foto → <strong>"Copiar endereço da imagem"</strong> e cole abaixo.
-        </p>
-        <a id="btn-google-fotos" href="#" target="_blank" class="btn full" style="background:#3182CE;color:white;border-color:#3182CE;">🔍 Buscar no Google Imagens</a>
-      </div>
-
-      <div class="foto-input-container">
-        <label>📎 Cole o endereço DIRETO da foto aqui:</label>
-        <input type="url" id="foto-url"
-          placeholder="Ex: https://site.com/foto.jpg"
-          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-          oninput="previewFotoUrl()" />
-        <div class="aviso-url" id="aviso-url">
-          ⚠️ Isso parece um link de página, não de imagem. Certifique-se de copiar o link DIRETO da foto.
+        <div class="step-title">
+            <img src="https://media.tenor.com/n6o2D-Z3DYoAAAAi/kurama-naruto.gif" class="mascote-gif" alt="Kyubi">
+            <div>
+                <span class="japanese-title">Gazo no Jutsu</span>
+                Invocação da Foto
+            </div>
         </div>
-        <div id="foto-preview-manual" style="display:none;margin-top:1.25rem;">
-          <img id="foto-img-manual" src="" alt="preview" referrerpolicy="no-referrer"
-            style="max-width:100%;max-height:220px;border-radius:var(--radius-sm);border:3px solid #BEE3F8;display:block;box-shadow:var(--shadow);" />
+
+        <p style="font-size:12px; color:#777; margin-bottom:10px;">Encontre a foto no Google, copie o endereço e cole aqui embaixo!</p>
+        
+        <a id="btn-google-fotos" href="#" target="_blank" class="btn-jutsu" style="background:#4A90E2;">🔍 Abrir Google Imagens</a>
+
+        <input type="url" id="foto-url" placeholder="Cole o link da foto aqui..." oninput="previewFotoUrl()">
+        
+        <div id="foto-preview-manual" style="display:none; margin-top:15px; text-align:center;">
+            <img id="foto-img-manual" src="" style="max-width:100%; border-radius:15px; border:4px solid var(--sakura-pink);">
         </div>
-      </div>
 
-      <div class="nome-foto-box">
-        <label>🏷️ Nome da foto no NextSite:</label>
-        <input type="text" id="foto-nome" placeholder="Ex: gremio-inter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <span class="sugestao-tag" id="sugestao-nome" onclick="usarSugestao()">—</span>
-        <div class="nome-foto-hint">Esse nome ajuda a organizar as fotos. Toque na sugestão para usar.</div>
-      </div>
+        <div style="margin-top:15px;">
+            <label>Nome do Arquivo:</label>
+            <input type="text" id="foto-name-input">
+            <span class="sugestao" id="sugestao-label" onclick="usarSugestao()">Auto-nome ✨</span>
+        </div>
 
-      <div id="foto-upload-status" class="status" style="display:none"></div>
-      <div class="btn-row">
-        <button class="btn primary" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>📤 Enviar Foto →</button>
-        <button class="btn" onclick="goStep2()">← Voltar</button>
-      </div>
+        <button class="btn-jutsu" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>🚀 Enviar Foto para o Jornal</button>
+        <div id="foto-status" class="status-bubble" style="display:none"></div>
     </div>
 
     <div class="card" id="step4" style="display:none">
-      <div class="card-label">🚀 Passo 4</div>
-      <div class="card-title">Publicar no NextSite</div>
-      <div class="preview-box">
-        <div class="preview-titulo" id="conf-titulo">—</div>
-        <div class="preview-texto" id="conf-preview">—</div>
-      </div>
-      <div class="publish-hint">✅ Texto copiado! No NextSite: cole o título, cole o texto, selecione a foto e clique em publicar! 🎉</div>
-      <div id="s4-status" class="status" style="display:none"></div>
-      <div class="btn-row">
-        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir NextSite</button>
-        <button class="btn" onclick="goStep3()">← Voltar</button>
-      </div>
-    </div>
-  </div>
+        <div class="step-title">
+            <img src="https://media.tenor.com/8-lAnk0W6z8AAAAi/tonton-naruto.gif" class="mascote-gif" alt="Tonton">
+            <div>
+                <span class="japanese-title">Kansei!</span>
+                Missão Cumprida!
+            </div>
+        </div>
+        
+        <div style="background:#FFF9FA; padding:15px; border-radius:15px; font-size:13px; color:#D44D7D; border: 1px dashed var(--sakura-pink);">
+            Tudo pronto! O texto já está na sua mão (copiado). Agora é só abrir o NextSite e deixar a mágica acontecer!
+        </div>
 
-  <div id="tab-config" style="display:none">
-    <div class="card">
-      <div class="card-label">⚙️ Configurações</div>
-      <div class="card-title">Acesso ao Servidor e NextSite</div>
-      <div class="divider"></div>
-      <div style="font-size:14px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">Endereço do Servidor</div>
-      <div class="url-mono">https://duda-news-server.onrender.com</div>
-      <div class="btn-row" style="margin-top:1.5rem;">
-        <button class="btn primary" onclick="salvarConfig()">💾 Salvar</button>
-        <button class="btn" onclick="testarServidor()">🔌 Testar Conexão</button>
-      </div>
-      <div id="cfg-status" class="status" style="display:none;margin-top:1rem;"></div>
+        <button class="btn-jutsu" onclick="copiarEAbrir()" id="btn-publicar">🌸 Publicar no NextSite</button>
     </div>
-  </div>
+
+</div>
+
+<div class="container" id="tab-config" style="display:none">
+    <div class="card" style="text-align:center;">
+        <img src="https://i.pinimg.com/originals/90/13/4e/90134e700769399478546b6276020557.png" style="width:120px;" alt="Gama-chan">
+        <div class="step-title" style="justify-content:center;">Gama-chan Wallet</div>
+        <p style="font-size:13px; color:#888;">Aqui cuidamos da conexão com o seu servidor no Render.</p>
+        
+        <div style="text-align:left; margin-top:20px;">
+            <label>Status do Chakra:</label>
+            <div id="cfg-status" class="status-bubble status-success">Servidor Online! 🟢</div>
+        </div>
+        
+        <button class="btn-jutsu" onclick="testarServidor()">Testar Conexão</button>
+    </div>
 </div>
 
 <script>
-/* ── CONFIGURAÇÕES E INICIALIZAÇÃO ── */
 const SERVER = 'https://duda-news-server.onrender.com';
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
 
-window.onload = () => {
-  document.getElementById('cfg-user').value = localStorage.getItem('duda_user') || '';
-  document.getElementById('cfg-pass').value = localStorage.getItem('duda_pass') || '';
-};
-
-/* ── NAVEGAÇÃO E UI ── */
 function switchTab(t) {
-  document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
-  document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
-  document.querySelectorAll('.tab').forEach((el, i) =>
-    el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1))
-  );
-}
-
-function setProgress(n) {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById('ps' + i);
-    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
-    el.querySelector('.step-num').textContent = i < n ? '✓' : i;
-  }
+    document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
+    document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
+    document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1)));
 }
 
 function showStatus(id, type, msg) {
-  const el = document.getElementById(id);
-  el.style.display = 'block';
-  el.className = 'status ' + type;
-  el.innerHTML = msg;
-}
-function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
-
-function scrollToCard(id) {
-  setTimeout(() => {
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 60);
+    el.style.display = 'flex';
+    el.className = 'status-bubble status-' + type;
+    el.innerHTML = msg;
 }
 
-/* ── PASSO 1: BUSCAR MATÉRIAS ── */
+// LOGICA DE BUSCA
 async function buscarMaterias() {
-  const btn = document.getElementById('btn-buscar');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Buscando...';
-  document.getElementById('buscar-hint').textContent = 'Pode demorar um pouco na primeira vez...';
-  showStatus('s1-status', 'info', '<span class="spinner"></span> Carregando matérias do Estadão...');
-  document.getElementById('news-list').innerHTML = '';
-  try {
-    const res = await fetch(`${SERVER}/materias`);
-    const data = await res.json();
-    hideStatus('s1-status');
-    document.getElementById('buscar-hint').textContent = '';
-    if (!data.ok || !data.materias?.length) {
-      showStatus('s1-status', 'error', '❌ Nenhuma matéria encontrada no momento.');
-    } else {
-      renderMaterias(data.materias);
-      showStatus('s1-status', 'success', `🎉 ${data.total} matérias carregadas com sucesso!`);
+    const btn = document.getElementById('btn-buscar');
+    btn.disabled = true;
+    btn.innerHTML = '✨ Concentrando Chakra...';
+    showStatus('s1-status', 'success', '🌀 Invocando notícias do Estadão...');
+    
+    try {
+        const res = await fetch(`${SERVER}/materias`);
+        const data = await res.json();
+        if(data.ok) {
+            renderMaterias(data.materias);
+            document.getElementById('s1-status').style.display = 'none';
+        }
+    } catch(e) {
+        showStatus('s1-status', 'error', '❌ O Jutsu falhou! Tente novamente.');
     }
-  } catch(e) {
-    showStatus('s1-status', 'error', '❌ Erro de conexão com o servidor. Tente de novo em 30s.');
-    document.getElementById('buscar-hint').textContent = '';
-  }
-  btn.disabled = false;
-  btn.innerHTML = '⚡ Buscar matérias';
+    btn.disabled = false;
+    btn.innerHTML = '✨ Concentrar Chakra (Buscar)';
 }
 
 function renderMaterias(lista) {
-  const div = document.getElementById('news-list');
-  div.innerHTML = '';
-  const publicadas = JSON.parse(localStorage.getItem('tanaka_publicadas') || '[]');
-  
-  lista.forEach(m => {
-    const jaPublicada = publicadas.includes(m.link);
-    const item = document.createElement('div');
-    item.className = 'news-item';
-    const textDiv = document.createElement('div');
-    textDiv.className = 'news-text';
-    const titleEl = document.createElement('div');
-    titleEl.className = 'news-title';
-    titleEl.textContent = m.titulo;
-    const timeEl = document.createElement('div');
-    timeEl.className = 'news-time';
-    timeEl.textContent = m.tempo || '';
-    if (m.autor) timeEl.textContent += ' · ' + m.autor;
-    textDiv.appendChild(titleEl);
-    textDiv.appendChild(timeEl);
-    item.appendChild(textDiv);
+    const container = document.getElementById('news-list');
+    container.innerHTML = '';
+    lista.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'news-item';
+        div.innerHTML = `<span class="news-title">${m.titulo}</span>
+                         <button class="tab active" style="padding:5px 15px; font-size:12px;" onclick="carregarMateria('${m.link}')">Abrir</button>`;
+        container.appendChild(div);
+    });
+}
+
+async function carregarMateria(url) {
+    showStatus('s1-status', 'success', '📖 Lendo pergaminho...');
+    try {
+        const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if(data.ok) {
+            document.getElementById('edit-titulo').value = data.titulo;
+            document.getElementById('edit-texto').value = data.texto;
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+        }
+    } catch(e) { alert("Erro ao carregar!"); }
+}
+
+function goStep3() {
+    const titulo = document.getElementById('edit-titulo').value;
+    const sugestao = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().split('-').slice(0,3).join('-');
+    document.getElementById('sugestao-label').innerText = sugestao;
+    document.getElementById('foto-name-input').value = sugestao;
+    document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&tbm=isch`;
     
-    if (jaPublicada) {
-      const tag = document.createElement('span');
-      tag.className = 'tag-publicada';
-      tag.textContent = '✓ Publicada';
-      item.appendChild(tag);
-    } else {
-      const btn = document.createElement('button');
-      btn.className = 'btn primary small';
-      btn.textContent = 'Usar →';
-      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo));
-      item.appendChild(btn);
-    }
-    div.appendChild(item);
-  });
-}
-
-async function carregarMateria(link, titulo) {
-  showStatus('s1-status', 'info', '<span class="spinner"></span> Carregando o texto completo...');
-  document.getElementById('edit-titulo').value = titulo;
-  document.getElementById('edit-texto').value = '';
-  try {
-    const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(link)}`);
-    const data = await res.json();
-    if (data.ok) {
-      document.getElementById('edit-titulo').value = data.titulo || titulo;
-      document.getElementById('edit-titulo')._link = link;
-      document.getElementById('edit-texto').value = data.texto || '';
-      updateCount();
-      showStatus('s1-status', 'success', '✅ Matéria carregada! Revise e edite 🌸');
-    } else {
-      showStatus('s1-status', 'error', '❌ Erro ao carregar o texto. Você pode colar manualmente.');
-    }
-  } catch(e) {
-    showStatus('s1-status', 'error', '❌ Erro de conexão ao carregar.');
-  }
-  document.getElementById('step2').style.display = 'block';
-  document.getElementById('step3').style.display = 'none';
-  document.getElementById('step4').style.display = 'none';
-  setProgress(2);
-  scrollToCard('step2');
-}
-
-/* ── PASSO 2: REVISAR ── */
-function goStep1() {
-  ['step2','step3','step4'].forEach(id => document.getElementById(id).style.display = 'none');
-  hideStatus('s1-status');
-  setProgress(1);
-  scrollToCard('step1');
-}
-
-function goStep2() {
-  document.getElementById('step3').style.display = 'none';
-  document.getElementById('step4').style.display = 'none';
-  setProgress(2);
-  scrollToCard('step2');
-}
-
-async function goStep3() {
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const texto = document.getElementById('edit-texto').value.trim();
-  if (!titulo || !texto) {
-    showStatus('s2-status', 'error', '❌ Preencha o título e o texto antes de avançar!');
-    return;
-  }
-  hideStatus('s2-status');
-
-  // Reseta passo 3
-  document.getElementById('foto-url').value = '';
-  document.getElementById('foto-preview-manual').style.display = 'none';
-  document.getElementById('aviso-url').style.display = 'none';
-  document.getElementById('btn-confirmar-foto').disabled = true;
-  hideStatus('foto-upload-status');
-
-  // Gera sugestão de nome
-  const sugestao = gerarNomeCurto(titulo);
-  document.getElementById('sugestao-nome').textContent = sugestao;
-  document.getElementById('foto-nome').value = sugestao;
-
-  // Monta busca Google Imagens
-  const palavrasChave = extrairPalavrasChaveSync(titulo);
-  document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(palavrasChave + ' futebol')}&udm=2`;
-
-  document.getElementById('step3').style.display = 'block';
-  document.getElementById('step4').style.display = 'none';
-  setProgress(3);
-  scrollToCard('step3');
-}
-
-/* ── PASSO 3: FOTO ── */
-function gerarNomeCurto(titulo) {
-  const removeChars = /[^a-zA-Z0-9 ]/g;
-  return titulo
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(removeChars, '').split(' ')
-    .filter(p => p.length > 3).slice(0, 3)
-    .join('-').toLowerCase() || 'foto-materia';
-}
-
-function usarSugestao() {
-  const sug = document.getElementById('sugestao-nome').textContent;
-  if (sug && sug !== '—') {
-    document.getElementById('foto-nome').value = sug;
-    document.getElementById('foto-nome').focus();
-  }
-}
-
-function extrairPalavrasChaveSync(titulo) {
-  const stopWords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem','que','se','o','a','os','as','um','uma','e','ou','mas','mais','foi','é','são']);
-  return titulo.replace(/[^\w\s]/g,'').split(' ')
-    .filter(p => p.length > 3 && !stopWords.has(p.toLowerCase()))
-    .slice(0, 4).join(' ');
-}
-
-function seemsUrlDePagina(url) {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes('google.com')) return true;
-    const path = u.pathname.toLowerCase();
-    if (/\.(html|htm|php|asp|aspx)(\?.*)?$/.test(path)) return true;
-    return false;
-  } catch(e) { return false; }
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'block';
 }
 
 function previewFotoUrl() {
-  const url = document.getElementById('foto-url').value.trim();
-  const btn = document.getElementById('btn-confirmar-foto');
-  const aviso = document.getElementById('aviso-url');
-  const preview = document.getElementById('foto-preview-manual');
-  
-  if (!url) { preview.style.display = 'none'; aviso.style.display = 'none'; btn.disabled = true; return; }
-
-  // Mostra aviso se parece URL de página
-  if (seemsUrlDePagina(url)) { aviso.style.display = 'block'; preview.style.display = 'none'; btn.disabled = true; return; }
-  aviso.style.display = 'none';
-
-  // Tenta carregar preview
-  const img = document.getElementById('foto-img-manual');
-  img.src = url;
-  img.onload = () => { preview.style.display = 'block'; btn.disabled = false; };
-  img.onerror = () => {
-    preview.style.display = 'none';
-    // Mesmo sem preview, libera para o servidor tentar baixar (ignora CORS)
-    if (url.length > 10) btn.disabled = false;
-  };
+    const url = document.getElementById('foto-url').value;
+    const img = document.getElementById('foto-img-manual');
+    if(url.length > 10) {
+        img.src = url;
+        document.getElementById('foto-preview-manual').style.display = 'block';
+        document.getElementById('btn-confirmar-foto').disabled = false;
+    }
 }
 
 async function confirmarFotoManual() {
-  const url = document.getElementById('foto-url').value.trim();
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
-
-  if (!url) { showStatus('foto-upload-status', 'error', '❌ Cole o endereço da foto primeiro!'); return; }
-
-  const btn = document.getElementById('btn-confirmar-foto');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Enviando...';
-  showStatus('foto-upload-status', 'info', '<span class="spinner"></span> Enviando foto para o NextSite...');
-
-  try {
-    const res = await fetch(`${SERVER}/upload-foto`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      showStatus('foto-upload-status', 'success', '✅ Foto enviada! A legenda será: ' + data.legendaExibicao + ' 🌸');
-      btn.innerHTML = '✅ Foto Enviada!';
-      setTimeout(() => goStep4(), 1000);
-    } else {
-      showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar foto.'));
-      btn.disabled = false; btn.innerHTML = '📤 Enviar Foto →';
-    }
-  } catch(e) {
-    showStatus('foto-upload-status', 'error', '❌ Erro de conexão ao enviar.');
-    btn.disabled = false; btn.innerHTML = '📤 Enviar Foto →';
-  }
-}
-
-/* ── PASSO 4: PUBLICAR ── */
-function goStep4() {
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const texto = document.getElementById('edit-texto').value.trim();
-  document.getElementById('conf-titulo').textContent = titulo;
-  document.getElementById('conf-preview').textContent = texto.substring(0, 300) + '...';
-  navigator.clipboard.writeText(`TÍTULO:\n${titulo}\n\nTEXTO:\n${texto}`).catch(() => {});
-  document.getElementById('step4').style.display = 'block';
-  setProgress(4);
-  scrollToCard('step4');
+    const url = document.getElementById('foto-url').value;
+    const nome = document.getElementById('foto-name-input').value;
+    const titulo = document.getElementById('edit-titulo').value;
+    
+    showStatus('foto-status', 'success', '🕊️ Pakkun está levando a foto...');
+    
+    try {
+        const res = await fetch(`${SERVER}/upload-foto`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ fotoUrl: url, titulo: titulo, nomeFoto: nome })
+        });
+        const data = await res.json();
+        if(data.ok) {
+            showStatus('foto-status', 'success', '✅ Foto entregue na Vila!');
+            setTimeout(() => {
+                document.getElementById('step3').style.display = 'none';
+                document.getElementById('step4').style.display = 'block';
+            }, 1000);
+        }
+    } catch(e) { showStatus('foto-status', 'error', '❌ A foto se perdeu no caminho.'); }
 }
 
 function copiarEAbrir() {
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const texto = document.getElementById('edit-texto').value.trim();
-  const chapeu = document.getElementById('edit-chapeu').value;
-  const json = JSON.stringify({ titulo, texto, chapeu });
-  const dados = btoa(unescape(encodeURIComponent(json)));
-  const url = NEXTSITE + '&tanaka=' + dados;
-  const linkAtual = document.getElementById('edit-titulo')._link || '';
-  
-  if (linkAtual) {
-    const publicadas = JSON.parse(localStorage.getItem('tanaka_publicadas') || '[]');
-    if (!publicadas.includes(linkAtual)) { publicadas.push(linkAtual); localStorage.setItem('tanaka_publicadas', JSON.stringify(publicadas)); }
-  }
+    const titulo = document.getElementById('edit-titulo').value;
+    const texto = document.getElementById('edit-texto').value;
+    const chapeu = document.getElementById('edit-chapeu').value;
+    const fotoNome = document.getElementById('foto-name-input').value;
 
-  showStatus('s4-status', 'success', '🎉 Abrindo o NextSite. Tudo pronto!');
-  setTimeout(() => window.open(url, '_blank'), 400);
-  const btn = document.getElementById('btn-publicar');
-  btn.textContent = '✅ Abrindo!';
-  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir NextSite'; }, 3000);
+    const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
+    const dados = btoa(unescape(encodeURIComponent(json)));
+    
+    navigator.clipboard.writeText(titulo + "\n\n" + texto);
+    window.open(NEXTSITE + '&tanaka=' + dados, '_blank');
 }
 
-/* ── UTILITÁRIOS E CONFIG ── */
-function updateCount() {
-  document.getElementById('char-count').textContent = document.getElementById('edit-texto').value.length + ' caracteres';
+function usarSugestao() {
+    document.getElementById('foto-name-input').value = document.getElementById('sugestao-label').innerText;
 }
 
-function salvarConfig() {
-  localStorage.setItem('duda_user', document.getElementById('cfg-user').value.trim());
-  localStorage.setItem('duda_pass', document.getElementById('cfg-pass').value);
-  showStatus('cfg-status', 'success', '💾 Configurações salvas!');
-  setTimeout(() => hideStatus('cfg-status'), 2000);
-}
+function goStep1() { document.getElementById('step2').style.display='none'; document.getElementById('step1').style.display='block'; }
 
 async function testarServidor() {
-  showStatus('cfg-status', 'info', '<span class="spinner"></span> Testando conexão...');
-  try {
-    const res = await fetch(`${SERVER}/`);
-    const data = await res.json();
-    showStatus('cfg-status', 'success', '🟢 Servidor Tanaka rodando: ' + data.message);
-  } catch(e) {
-    showStatus('cfg-status', 'error', '🔴 Servidor offline ou endereço incorreto.');
-  }
+    try {
+        const res = await fetch(SERVER + '/');
+        const data = await res.json();
+        showStatus('cfg-status', 'success', '🟢 Servidor Ninja Online!');
+    } catch(e) { showStatus('cfg-status', 'error', '🔴 Servidor Offline.'); }
 }
 </script>
+
 </body>
 </html>
