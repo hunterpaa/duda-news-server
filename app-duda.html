@@ -227,7 +227,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
       <div class="nome-foto-box">
         <label>🏷️ Nome da foto no NextSite:</label>
         <input type="text" id="foto-nome"
-          placeholder="Ex: gremio-inter"
+          placeholder="Ex: gremio inter"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
         <div style="margin-top:6px;">
           <span style="font-size:11px;color:#bbb;">Sugestão: </span>
@@ -482,7 +482,7 @@ function gerarNomeCurto(titulo) {
   const demais = palavras.filter(p => /^[a-z]/.test(p));
 
   const escolhidas = [...new Set([...proprias, ...demais])].slice(0, 3);
-  return escolhidas.map(p => p.toLowerCase()).join('-') || 'foto-esporte';
+  return escolhidas.map(p => p.toLowerCase()).join(' ') || 'foto esporte';
 }
 
 function usarSugestao() {
