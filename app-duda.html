@@ -157,7 +157,6 @@ textarea:focus { outline: none; border-color: var(--pink); }
       <div class="step" id="ps4"><div class="step-num">4</div> Publicar</div>
     </div>
 
-    <!-- PASSO 1 -->
     <div class="card" id="step1">
       <div class="card-label">📰 Passo 1</div>
       <div class="card-title">Últimas matérias</div>
@@ -169,7 +168,6 @@ textarea:focus { outline: none; border-color: var(--pink); }
       <span id="buscar-hint"></span>
     </div>
 
-    <!-- PASSO 2 -->
     <div class="card" id="step2" style="display:none">
       <div class="card-label">✍️ Passo 2</div>
       <div class="card-title">Revisar a matéria</div>
@@ -200,12 +198,10 @@ textarea:focus { outline: none; border-color: var(--pink); }
       </div>
     </div>
 
-    <!-- PASSO 3 -->
     <div class="card" id="step3" style="display:none">
       <div class="card-label">🖼️ Passo 3</div>
       <div class="card-title">Foto da matéria</div>
 
-      <!-- Botão Google Imagens -->
       <div style="background:#e8f0fe;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
         <p style="font-size:14px;color:#333;margin-bottom:10px;line-height:1.5;">
           Abre o Google Imagens com a busca pronta. No celular: <strong>toque e segure</strong> na foto → <strong>"Copiar link da imagem"</strong> e cole abaixo.
@@ -213,7 +209,6 @@ textarea:focus { outline: none; border-color: var(--pink); }
         <a id="btn-google-fotos" href="#" target="_blank" class="btn full" style="background:#4285f4;color:white;border-color:#4285f4;">🔍 Abrir Google Imagens</a>
       </div>
 
-      <!-- Campo URL da foto -->
       <div style="background:#f0f7ff;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
         <label style="color:#555;margin-bottom:8px;">📎 Cole o link DIRETO da imagem aqui:</label>
         <input type="url" id="foto-url"
@@ -224,12 +219,11 @@ textarea:focus { outline: none; border-color: var(--pink); }
           ⚠️ Isso parece a URL de uma página, não de uma imagem. Copie o link DIRETO da foto (toque e segure → "Copiar link da imagem").
         </div>
         <div id="foto-preview-manual" style="display:none;margin-top:10px;">
-          <img id="foto-img-manual" src="" alt="preview"
+          <img id="foto-img-manual" src="" alt="preview" referrerpolicy="no-referrer"
             style="max-width:100%;max-height:200px;border-radius:8px;border:2px solid #b3d4f5;display:block;" />
         </div>
       </div>
 
-      <!-- Nome da foto no NextSite -->
       <div class="nome-foto-box">
         <label>🏷️ Nome da foto no NextSite:</label>
         <input type="text" id="foto-nome"
@@ -249,7 +243,6 @@ textarea:focus { outline: none; border-color: var(--pink); }
       </div>
     </div>
 
-    <!-- PASSO 4 -->
     <div class="card" id="step4" style="display:none">
       <div class="card-label">🚀 Passo 4</div>
       <div class="card-title">Publicar no NextSite</div>
@@ -268,7 +261,6 @@ textarea:focus { outline: none; border-color: var(--pink); }
     </div>
   </div>
 
-  <!-- CONFIG -->
   <div id="tab-config" style="display:none">
     <div class="card">
       <div class="card-label">⚙️ Configurações</div>
@@ -548,16 +540,38 @@ function previewFotoUrl() {
   const btn = document.getElementById('btn-confirmar-foto');
   const aviso = document.getElementById('aviso-url');
   const preview = document.getElementById('foto-preview-manual');
+  const img = document.getElementById('foto-img-manual');
 
-  if (!url || !url.startsWith('http')) {
+  // Reseta as cores de aviso
+  aviso.style.color = "#e65100";
+  img.style.display = 'block';
+
+  if (!url) {
     preview.style.display = 'none';
     aviso.style.display = 'none';
     btn.disabled = true;
     return;
   }
 
-  // Mostra aviso se parece URL de página
+  // Verifica se a imagem é um código Base64 (miniatura do Google)
+  if (url.startsWith('data:image')) {
+    aviso.innerHTML = "⚠️ Você copiou a miniatura. Clique na foto no Google para carregar e só depois copie o link!";
+    aviso.style.display = 'block';
+    preview.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  if (!url.startsWith('http')) {
+    preview.style.display = 'none';
+    aviso.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  // Verifica se colou o link de uma página em vez do link da foto
   if (pareceUrlDePagina(url)) {
+    aviso.innerHTML = "⚠️ Isso parece o link de uma página. Copie o link DIRETO da foto.";
     aviso.style.display = 'block';
     preview.style.display = 'none';
     btn.disabled = true;
@@ -565,17 +579,22 @@ function previewFotoUrl() {
   }
 
   aviso.style.display = 'none';
-
-  // Tenta carregar preview
-  const img = document.getElementById('foto-img-manual');
+  preview.style.display = 'block';
   img.src = url;
+
+  // Se a prévia carregar perfeitamente
   img.onload = () => {
-    preview.style.display = 'block';
     btn.disabled = false;
   };
+
+  // Se o site blindar a prévia (CORS), libera o envio mesmo assim!
   img.onerror = () => {
-    preview.style.display = 'none';
-    // Mesmo sem preview, permite tentar — servidor faz o download
+    img.style.display = 'none'; // Esconde o ícone quebrado
+    aviso.innerHTML = "👀 <i>A prévia foi bloqueada pelo site, mas o link é válido. Pode clicar em Enviar!</i>";
+    aviso.style.color = "#888";
+    aviso.style.display = 'block';
+    
+    // Libera o botão porque o backend (server.js) consegue baixar a foto
     if (url.length > 10) btn.disabled = false;
   };
 }
