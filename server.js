@@ -77,19 +77,23 @@ let phpSessionId = '';
 
 // ── HOME ──
 app.get('/', (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET / — health check`);
   res.json({ ok: true, message: 'Servidor da Duda rodando!' });
 });
 
 // ── COOKIE ──
 app.post('/cookie', (req, res) => {
   const { phpsessid } = req.body;
+  console.log(`[${new Date().toISOString()}] POST /cookie — phpsessid recebido: ${phpsessid ? 'sim' : 'não'}`);
   if (!phpsessid) return res.status(400).json({ ok: false, erro: 'Cookie não informado' });
   phpSessionId = phpsessid;
+  console.log(`[${new Date().toISOString()}] Cookie salvo com sucesso`);
   res.json({ ok: true, message: 'Cookie salvo!' });
 });
 
 // ── MATÉRIAS ──
 app.get('/materias', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET /materias — buscando lista de matérias`);
   try {
     const body = {
       operationName: 'Contents',
@@ -118,8 +122,10 @@ app.get('/materias', async (req, res) => {
       tempo: formatarData(item.published_timestamp),
       autor: item.authors?.[0]?.name || '',
     }));
+    console.log(`[${new Date().toISOString()}] /materias — ${materias.length} matérias retornadas`);
     res.json({ ok: true, total: materias.length, materias });
   } catch (e) {
+    console.error(`[${new Date().toISOString()}] /materias — erro: ${e.message}`);
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
@@ -127,6 +133,7 @@ app.get('/materias', async (req, res) => {
 // ── MATÉRIA COMPLETA ──
 app.get('/materia', async (req, res) => {
   const { url } = req.query;
+  console.log(`[${new Date().toISOString()}] GET /materia — url: ${url || 'não informada'}`);
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
 
   const userAgents = [
@@ -138,16 +145,26 @@ app.get('/materia', async (req, res) => {
   let response = null;
   for (const ua of userAgents) {
     try {
+      console.log(`[${new Date().toISOString()}] /materia — tentando User-Agent: ${ua.substring(0, 40)}...`);
       response = await axios.get(url, {
         headers: { 'User-Agent': ua, 'Accept-Language': 'pt-BR,pt;q=0.9', 'Referer': 'https://www.google.com/' },
         timeout: 15000,
         maxRedirects: 5,
       });
-      if (response.status === 200) break;
-    } catch (e) { continue; }
+      if (response.status === 200) {
+        console.log(`[${new Date().toISOString()}] /materia — acesso OK com status ${response.status}`);
+        break;
+      }
+    } catch (e) {
+      console.warn(`[${new Date().toISOString()}] /materia — falhou com esse User-Agent: ${e.message}`);
+      continue;
+    }
   }
 
-  if (!response) return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
+  if (!response) {
+    console.error(`[${new Date().toISOString()}] /materia — todos os User-Agents falharam`);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
+  }
 
   try {
     const $ = cheerio.load(response.data);
@@ -164,8 +181,10 @@ app.get('/materia', async (req, res) => {
       if (encontrados.length >= 3) { paragrafos = encontrados; break; }
     }
     const texto = [...new Set(paragrafos)].join('\n\n');
+    console.log(`[${new Date().toISOString()}] /materia — título: "${titulo}" | parágrafos: ${paragrafos.length}`);
     res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
   } catch (e) {
+    console.error(`[${new Date().toISOString()}] /materia — erro ao parsear HTML: ${e.message}`);
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
@@ -174,11 +193,14 @@ app.get('/materia', async (req, res) => {
 // Recebe fotoUrl, titulo e nomeFoto (customizado pelo app)
 app.post('/upload-foto', async (req, res) => {
   const { fotoUrl, titulo, nomeFoto } = req.body;
+  console.log(`[${new Date().toISOString()}] POST /upload-foto — fotoUrl: ${fotoUrl} | titulo: ${titulo} | nomeFoto: ${nomeFoto}`);
 
   if (!fotoUrl || !titulo) {
+    console.warn(`[${new Date().toISOString()}] /upload-foto — fotoUrl ou titulo ausente`);
     return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
   }
   if (!phpSessionId) {
+    console.warn(`[${new Date().toISOString()}] /upload-foto — cookie não encontrado`);
     return res.status(401).json({ ok: false, erro: 'Cookie não encontrado. Abra o NextSite com o favorito Tanaka Sports primeiro!' });
   }
 
@@ -192,6 +214,7 @@ app.post('/upload-foto', async (req, res) => {
 
   try {
     // 1. Faz o download da imagem no servidor (evita bloqueio de CORS no celular)
+    console.log(`[${new Date().toISOString()}] /upload-foto — baixando imagem: ${fotoUrl}`);
     const imgRes = await axios.get(fotoUrl, {
       responseType: 'arraybuffer',
       timeout: 20000,
@@ -210,6 +233,7 @@ app.post('/upload-foto', async (req, res) => {
     else if (ct.includes('webp')) ext = 'webp';
 
     const nomeArquivo = `${nomeSlug}.${ext}`;
+    console.log(`[${new Date().toISOString()}] /upload-foto — imagem baixada | tipo: ${ct} | arquivo: ${nomeArquivo}`);
 
     // 3. Monta o FormData e envia ao NextSite
     const form = new FormData();
@@ -240,8 +264,7 @@ app.post('/upload-foto', async (req, res) => {
       }
     );
 
-    // Loga a resposta do NextSite para debug
-    console.log('NextSite upload response:', uploadRes.status, JSON.stringify(uploadRes.data).substring(0, 200));
+    console.log(`[${new Date().toISOString()}] /upload-foto — resposta NextSite: status ${uploadRes.status} | body: ${JSON.stringify(uploadRes.data).substring(0, 200)}`);
 
     res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaExibicao });
 
