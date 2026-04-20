@@ -179,6 +179,11 @@
     (params.get('udm') === '2' || params.get('tbm') === 'isch');
   if (!isGoogleImagens) return;
 
+  // Fecha a aba quando o app confirmar que a foto foi enviada
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'FOTO_ENVIADA') window.close();
+  });
+
   setTimeout(() => {
     const urls = [];
     console.log('[Tanaka] Google Imagens: iniciando extração...');
