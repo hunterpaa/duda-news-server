@@ -617,7 +617,6 @@ function previewFotoUrl() {
 }
 
 async function confirmarFotoManual() {
-  abaGoogle?.close();
   const url = document.getElementById('foto-url').value.trim();
   const titulo = document.getElementById('edit-titulo').value.trim();
   const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
@@ -685,7 +684,7 @@ async function copiarEAbrir() {
   if (linkAtual) marcarPublicada(linkAtual);
 
   showStatus('s4-status', 'success', '🎉 Abrindo Diário de Cuiabá...');
-  setTimeout(() => window.open(url, '_self'), 400);
+  setTimeout(() => window.open(url, '_blank'), 400);
 
   const btn = document.getElementById('btn-publicar');
   btn.textContent = '✅ Abrindo!';
@@ -716,7 +715,6 @@ function abrirGoogleImagens() {
   }
 
   abaGoogle = window.open(url, '_blank');
-  setTimeout(() => window.focus(), 500); // recupera foco pro app
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
   let tentativas = 0;
@@ -750,7 +748,6 @@ function exibirGridFotos(urls) {
     img.src = url;
     img.onclick = () => {
       selecionarFotoDoGrid(img.src);
-      if (abaGoogle && !abaGoogle.closed) abaGoogle.close();
       grid.style.display = 'none';
     };
     img.onerror = () => {
@@ -774,7 +771,6 @@ function exibirGridFotos(urls) {
 
   if (iniciais.length > 0) {
     grid.style.display = 'grid';
-    if (abaGoogle && !abaGoogle.closed) abaGoogle.close();
   }
 }
 
