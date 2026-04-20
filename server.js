@@ -77,6 +77,32 @@ function gerarLegenda(titulo) {
   return [...new Set(proprias)].slice(0, 4).join(' ') || extrairPalavrasChave(titulo);
 }
 
+// ── Traduz erros técnicos para português ──
+function traduzirErro(e) {
+  if (e.code === 'ECONNRESET')                          return 'Conexão interrompida. Tente de novo.';
+  if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') return 'O servidor demorou para responder. Tente de novo.';
+  if (e.code === 'ERR_TLS_CERT_ALTNAME_INVALID' || /tls|socket disconnected/i.test(e.message)) return 'Erro de conexão segura. Tente de novo.';
+  if (e.response?.status === 404)                       return 'Matéria não encontrada.';
+  if (e.response?.status === 403)                       return 'Acesso negado pelo site.';
+  if (e.response?.status === 500)                       return 'Erro interno. Tente de novo em instantes.';
+  if (e.response?.status)                               return `Erro ${e.response.status} do servidor.`;
+  return 'Erro inesperado. Tente de novo.';
+}
+
+// ── Retry automático para erros de conexão ──
+async function comRetry(fn, tentativas = 3) {
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const retentar = e.code === 'ECONNRESET' || e.code === 'ECONNABORTED';
+      if (!retentar || i === tentativas - 1) throw e;
+      console.log(`[RETRY] Tentativa ${i + 2}/${tentativas} após ${e.code}...`);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+}
+
 // Cada IP tem seu próprio cookie de sessão — evita conflito entre usuários
 const sessoes = new Map();
 
@@ -118,7 +144,7 @@ app.get('/materias', async (req, res) => {
       },
     };
     console.log('[MATÉRIAS] Buscando artigos...');
-    const r = await axios.post(GRAPHQL_URL, body, { headers: HEADERS, timeout: 15000 });
+    const r = await comRetry(() => axios.post(GRAPHQL_URL, body, { headers: HEADERS, timeout: 25000 }));
     const materias = (r.data?.data?.contents || []).map(item => ({
       titulo: sanitizar(item.headline?.text || ''),
       link: item.links?.canonical || '',
@@ -128,7 +154,7 @@ app.get('/materias', async (req, res) => {
     console.log(`[MATÉRIAS] ${materias.length} artigos retornados`);
     res.json({ ok: true, total: materias.length, materias });
   } catch (e) {
-    res.status(500).json({ ok: false, erro: e.message });
+    res.status(500).json({ ok: false, erro: traduzirErro(e) });
   }
 });
 
@@ -156,15 +182,15 @@ app.get('/materia', async (req, res) => {
 
   let response = null;
   try {
-    response = await Promise.any(userAgents.map(ua =>
+    response = await comRetry(() => Promise.any(userAgents.map(ua =>
       axios.get(url, {
         headers: { 'User-Agent': ua, 'Accept-Language': 'pt-BR,pt;q=0.9', 'Referer': 'https://www.google.com/' },
-        timeout: 10000,
+        timeout: 25000,
         maxRedirects: 5,
       })
-    ));
-  } catch {
-    return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
+    )));
+  } catch (e) {
+    return res.status(500).json({ ok: false, erro: traduzirErro(e) });
   }
 
   try {
@@ -202,7 +228,7 @@ app.get('/materia', async (req, res) => {
     cacheMaterias.set(url, { ts: Date.now(), data: result });
     res.json(result);
   } catch (e) {
-    res.status(500).json({ ok: false, erro: e.message });
+    res.status(500).json({ ok: false, erro: traduzirErro(e) });
   }
 });
 
@@ -230,15 +256,16 @@ app.post('/upload-foto', async (req, res) => {
 
   try {
     // 1. Faz o download da imagem no servidor (evita bloqueio de CORS no celular)
-    const imgRes = await axios.get(fotoUrl, {
+    const imgRes = await comRetry(() => axios.get(fotoUrl, {
       responseType: 'arraybuffer',
-      timeout: 20000,
+      timeout: 35000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Referer': 'https://www.google.com/',
         'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Connection': 'keep-alive',
       },
-    });
+    }));
 
     // 2. Determina extensão pelo Content-Type
     const ct = imgRes.headers['content-type'] || 'image/jpeg';
@@ -264,7 +291,7 @@ app.post('/upload-foto', async (req, res) => {
     form.append('transparencia_wda[0]', '0');
     form.append('publica[0]', '1');
 
-    const uploadRes = await axios.post(
+    const uploadRes = await comRetry(() => axios.post(
       'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
       form,
       {
@@ -273,10 +300,11 @@ app.post('/upload-foto', async (req, res) => {
           'Cookie': `PHPSESSID=${phpSessionId}`,
           'Referer': 'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/novo.php?empresa=1&parent=6',
           'Origin': 'https://admin-dc4.nextsite.com.br',
+          'Connection': 'keep-alive',
         },
-        timeout: 30000,
+        timeout: 35000,
       }
-    );
+    ));
 
     // Loga a resposta do NextSite para debug
     console.log(`[UPLOAD] Foto enviada: ${nomeArquivo} → status ${uploadRes.status}`);
@@ -285,14 +313,7 @@ app.post('/upload-foto', async (req, res) => {
 
   } catch (e) {
     console.error(`[UPLOAD] Erro: ${e.message}`);
-    // Detalha o erro para a Duda ver no app
-    let mensagem = e.message;
-    if (e.response) {
-      mensagem = `Erro ${e.response.status} do NextSite`;
-    } else if (e.code === 'ECONNABORTED') {
-      mensagem = 'Timeout — imagem demorou demais para baixar';
-    }
-    res.status(500).json({ ok: false, erro: mensagem });
+    res.status(500).json({ ok: false, erro: traduzirErro(e) });
   }
 });
 
