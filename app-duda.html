@@ -297,7 +297,9 @@ textarea:focus { outline: none; border-color: var(--pink); }
 </div>
 
 <script>
-const SERVER = 'http://localhost:3000';
+const SERVER = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://duda-news-server.onrender.com';
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
 
 window.onload = () => {

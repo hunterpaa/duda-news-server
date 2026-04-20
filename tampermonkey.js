@@ -247,13 +247,12 @@
       } catch (e) {}
     }
 
-    // Fallback: envia pro servidor local como relay
+    // Fallback: envia pro servidor como relay (tenta local e Render)
     if (!enviouPorOpener) {
-      fetch('http://localhost:3000/google-imagens', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: payload })
-      }).catch(() => {});
+      const body = JSON.stringify({ urls: payload });
+      const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body };
+      fetch('http://localhost:3000/google-imagens', opts).catch(() => {});
+      fetch('https://duda-news-server.onrender.com/google-imagens', opts).catch(() => {});
     }
 
   }, 2500);
