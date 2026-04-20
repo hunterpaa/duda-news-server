@@ -1,16 +1,32 @@
 // ==UserScript==
 // @name         Tanaka → NextSite (auto-preencher)
 // @namespace    http://tampermonkey.net/
-// @version      4.0
+// @version      4.1
 // @description  Preenche o formulário do NextSite automaticamente com os dados do app da Duda
 // @author       Duda & Claude
-// @match        https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php*
+// @match        https://admin-dc4.nextsite.com.br/t53kx1_admin/*
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
 
 (function () {
   'use strict';
+
+  // Fluxo: renovar cookie (tanaka_cookie=1)
+  if (new URLSearchParams(window.location.search).get('tanaka_cookie') === '1') {
+    const match = document.cookie.match(/PHPSESSID=([^;]+)/);
+    if (match) {
+      const ps = JSON.stringify({ phpsessid: match[1] });
+      fetch('https://duda-news-server.onrender.com/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps });
+      fetch('http://localhost:3000/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
+    }
+    const d = document.createElement('div');
+    d.innerHTML = '✅ Cookie renovado!';
+    d.style.cssText = 'position:fixed;top:20px;right:20px;background:#2e7d32;color:white;padding:14px 22px;border-radius:12px;font-size:15px;font-weight:bold;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.3);font-family:sans-serif;';
+    document.body.appendChild(d);
+    setTimeout(() => { d.remove(); window.close(); }, 3000);
+    return;
+  }
 
   // Salva cookie sempre que abrir o NextSite
   const match = document.cookie.match(/PHPSESSID=([^;]+)/);
