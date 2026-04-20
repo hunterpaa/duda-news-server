@@ -181,6 +181,7 @@
 
   setTimeout(() => {
     const urls = [];
+    console.log('[Tanaka] Google Imagens: iniciando extração...');
 
     // Método 1: data-it → JSON → campo ou / purl / isu
     document.querySelectorAll('[data-it]').forEach(el => {
@@ -192,10 +193,11 @@
           urls.push(url);
       } catch (e) {}
     });
+    console.log('[Tanaka] Método 1 (data-it):', urls.length);
 
     // Método 2: outros atributos do Google
-    if (urls.length < 6) {
-      ['data-src', 'data-ow', 'data-tw'].forEach(attr => {
+    if (urls.length < 12) {
+      ['data-src', 'data-ow', 'data-tw', 'data-iurl'].forEach(attr => {
         document.querySelectorAll(`[${attr}]`).forEach(el => {
           if (urls.length >= 12) return;
           const url = el.getAttribute(attr);
@@ -204,19 +206,35 @@
         });
       });
     }
+    console.log('[Tanaka] Método 2 (atributos):', urls.length);
 
-    // Método 3: fallback — varredura no HTML por URLs de imagem
-    if (urls.length < 6) {
+    // Método 3: scripts inline com JSON escapado
+    if (urls.length < 12) {
+      document.querySelectorAll('script').forEach(s => {
+        if (urls.length >= 12) return;
+        const matches = s.textContent.match(/https?:\\?\/\\?\/[^"'\s\\]+\.(?:jpg|jpeg|png|webp)/gi) || [];
+        matches.forEach(raw => {
+          if (urls.length >= 12) return;
+          const url = raw.replace(/\\\//g, '/');
+          if (!url.includes('google') && !url.includes('gstatic') && !urls.includes(url))
+            urls.push(url);
+        });
+      });
+    }
+    console.log('[Tanaka] Método 3 (scripts):', urls.length);
+
+    // Método 4: fallback — varredura no HTML
+    if (urls.length < 12) {
       const found = document.documentElement.innerHTML.match(/https?:\/\/[^"' \s>]+\.(jpg|jpeg|png|webp)/gi) || [];
       found.forEach(url => {
         if (urls.length >= 12 || urls.includes(url)) return;
-        // Filtra miniaturas pequenas e URLs de UI do Google
         if (url.includes('google.com') || url.includes('gstatic.com')) return;
         urls.push(url);
       });
     }
+    console.log('[Tanaka] Método 4 (HTML):', urls.length, '| opener:', !!window.opener);
 
-    if (urls.length === 0) return;
+    if (urls.length === 0) { console.log('[Tanaka] Nenhuma URL encontrada!'); return; }
 
     const payload = urls.slice(0, 12);
 
@@ -237,5 +255,7 @@
         body: JSON.stringify({ urls: payload })
       }).catch(() => {});
     }
+
+    window.close();
   }, 2500);
 })();
