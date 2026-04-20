@@ -91,7 +91,6 @@ app.post('/cookie', (req, res) => {
   if (!phpsessid) return res.status(400).json({ ok: false, erro: 'Cookie não informado' });
   const ip = req.ip || req.socket.remoteAddress;
   sessoes.set(ip, phpsessid);
-  console.log(`[COOKIE] Sessão salva para ${ip}`);
   res.json({ ok: true, message: 'Cookie salvo!' });
 });
 
