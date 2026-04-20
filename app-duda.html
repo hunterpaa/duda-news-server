@@ -226,7 +226,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
       </div>
 
       <div class="nome-foto-box">
-        <label>🏷️ Nome da foto no NextSite:</label>
+        <label>🏷️ Nome da foto no Diário de Cuiabá:</label>
         <input type="text" id="foto-nome"
           placeholder="Ex: gremio inter"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -234,7 +234,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
           <span style="font-size:11px;color:#bbb;">Sugestão: </span>
           <span class="sugestao-tag" id="sugestao-nome" onclick="usarSugestao()">—</span>
         </div>
-        <div class="nome-foto-hint">Esse nome aparece no NextSite. Toque na sugestão para usar, ou escreva o que quiser.</div>
+        <div class="nome-foto-hint">Esse nome aparece no Diário de Cuiabá. Toque na sugestão para usar, ou escreva o que quiser.</div>
       </div>
 
       <div id="foto-upload-status" class="status" style="display:none"></div>
@@ -246,17 +246,17 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
     <div class="card" id="step4" style="display:none">
       <div class="card-label">🚀 Passo 4</div>
-      <div class="card-title">Publicar no NextSite</div>
+      <div class="card-title">Publicar no Diário de Cuiabá</div>
       <div class="preview-box">
         <div class="preview-label">Título</div>
         <div class="preview-titulo" id="conf-titulo">—</div>
         <div class="preview-label">Prévia</div>
         <div class="preview-texto" id="conf-preview">—</div>
       </div>
-      <div class="publish-hint">✅ Texto copiado! No NextSite: cole o título, cole o texto, selecione a foto e publique! 🎉</div>
+      <div class="publish-hint">✅ Texto copiado! No Diário de Cuiabá: cole o título, cole o texto, selecione a foto e publique! 🎉</div>
       <div id="s4-status" class="status" style="display:none"></div>
       <div class="btn-row">
-        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir NextSite</button>
+        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir Diário de Cuiabá</button>
         <button class="btn" onclick="goStep3()">← Voltar</button>
       </div>
     </div>
@@ -265,7 +265,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
   <div id="tab-config" style="display:none">
     <div class="card">
       <div class="card-label">⚙️ Configurações</div>
-      <div class="card-title">Acesso ao NextSite</div>
+      <div class="card-title">Acesso ao Diário de Cuiabá</div>
       <div class="field"><label>E-mail 📧</label><input type="email" id="cfg-user" placeholder="duda@diariodecuiaba.com.br" autocomplete="email" /></div>
       <div class="field"><label>Senha 🔑</label><input type="password" id="cfg-pass" placeholder="••••••••" autocomplete="current-password" /></div>
       <div class="divider"></div>
@@ -603,7 +603,7 @@ async function confirmarFotoManual() {
   const btn = document.getElementById('btn-confirmar-foto');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Enviando...';
-  showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o NextSite...');
+  showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o Diário de Cuiabá...');
 
   try {
     const res = await fetch(`${SERVER}/upload-foto`, {
@@ -657,12 +657,12 @@ async function copiarEAbrir() {
   const linkAtual = document.getElementById('edit-titulo')._link || '';
   if (linkAtual) marcarPublicada(linkAtual);
 
-  showStatus('s4-status', 'success', '🎉 Abrindo NextSite...');
+  showStatus('s4-status', 'success', '🎉 Abrindo Diário de Cuiabá...');
   setTimeout(() => window.open(url, '_self'), 400);
 
   const btn = document.getElementById('btn-publicar');
   btn.textContent = '✅ Abrindo!';
-  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir NextSite'; }, 3000);
+  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir Diário de Cuiabá'; }, 3000);
 }
 
 function updateCount() {
