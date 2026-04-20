@@ -699,20 +699,38 @@ function abrirGoogleImagens() {
   const grid = document.getElementById('google-fotos-grid');
   grid.style.display = 'none';
   grid.innerHTML = '';
+
+  // Loading no botão
+  const btn = document.getElementById('btn-google-fotos');
+  const textoOriginal = btn.textContent;
+  btn.textContent = '⏳ Buscando fotos...';
+  btn.disabled = true;
+
+  // Loading no grid
+  grid.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:16px 0;grid-column:1/-1;">⏳ Aguardando fotos do Google...</p>';
+  grid.style.display = 'block';
+
+  function restaurarBtn() {
+    btn.textContent = textoOriginal;
+    btn.disabled = false;
+  }
+
   abaGoogle = window.open(url, '_blank');
+  setTimeout(() => window.focus(), 500); // recupera foco pro app
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
   let tentativas = 0;
   const poll = setInterval(async () => {
     tentativas++;
-    if (tentativas > 30) { clearInterval(poll); return; } // para após 30s
-    if (grid.children.length > 0) { clearInterval(poll); return; } // já recebeu por postMessage
+    if (tentativas > 30) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; } // para após 30s
+    if (grid.querySelector('img')) { clearInterval(poll); return; } // já recebeu por postMessage
     try {
       const res = await fetch(`${SERVER}/google-imagens`);
       const data = await res.json();
       if (data.urls && data.urls.length > 0) {
         clearInterval(poll);
         exibirGridFotos(data.urls);
+        restaurarBtn();
       }
     } catch(e) {}
   }, 1000);
@@ -721,6 +739,9 @@ function abrirGoogleImagens() {
 function exibirGridFotos(urls) {
   const grid = document.getElementById('google-fotos-grid');
   grid.innerHTML = '';
+  // Restaura o botão caso tenha sido desabilitado
+  const btn = document.getElementById('btn-google-fotos');
+  if (btn) { btn.textContent = '🔍 Abrir Google Imagens'; btn.disabled = false; }
 
   // Fila de reserva: começa com tudo, os 6 primeiros vão para o grid
   const fila = [...urls];
