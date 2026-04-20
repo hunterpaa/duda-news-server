@@ -7,6 +7,10 @@ const FormData = require('form-data');
 const app = express();
 app.use(cors());
 app.use(express.json());
+const path2 = require('path');
+app.get('/app', (req, res) => {
+  res.sendFile(path2.join(__dirname, 'app-duda.html'));
+});
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -73,27 +77,26 @@ function gerarLegenda(titulo) {
   return [...new Set(proprias)].slice(0, 4).join(' ') || extrairPalavrasChave(titulo);
 }
 
-let phpSessionId = '';
+// Cada IP tem seu próprio cookie de sessão — evita conflito entre usuários
+const sessoes = new Map();
 
 // ── HOME ──
 app.get('/', (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET / — health check`);
   res.json({ ok: true, message: 'Servidor da Duda rodando!' });
 });
 
 // ── COOKIE ──
 app.post('/cookie', (req, res) => {
   const { phpsessid } = req.body;
-  console.log(`[${new Date().toISOString()}] POST /cookie — phpsessid recebido: ${phpsessid ? 'sim' : 'não'}`);
   if (!phpsessid) return res.status(400).json({ ok: false, erro: 'Cookie não informado' });
-  phpSessionId = phpsessid;
-  console.log(`[${new Date().toISOString()}] Cookie salvo com sucesso`);
+  const ip = req.ip || req.socket.remoteAddress;
+  sessoes.set(ip, phpsessid);
+  console.log(`[COOKIE] Sessão salva para ${ip}`);
   res.json({ ok: true, message: 'Cookie salvo!' });
 });
 
 // ── MATÉRIAS ──
 app.get('/materias', async (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET /materias — buscando lista de matérias`);
   try {
     const body = {
       operationName: 'Contents',
@@ -115,6 +118,7 @@ app.get('/materias', async (req, res) => {
         page: 1,
       },
     };
+    console.log('[MATÉRIAS] Buscando artigos...');
     const r = await axios.post(GRAPHQL_URL, body, { headers: HEADERS, timeout: 15000 });
     const materias = (r.data?.data?.contents || []).map(item => ({
       titulo: sanitizar(item.headline?.text || ''),
@@ -122,19 +126,28 @@ app.get('/materias', async (req, res) => {
       tempo: formatarData(item.published_timestamp),
       autor: item.authors?.[0]?.name || '',
     }));
-    console.log(`[${new Date().toISOString()}] /materias — ${materias.length} matérias retornadas`);
+    console.log(`[MATÉRIAS] ${materias.length} artigos retornados`);
     res.json({ ok: true, total: materias.length, materias });
   } catch (e) {
-    console.error(`[${new Date().toISOString()}] /materias — erro: ${e.message}`);
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
 
+const cacheMaterias = new Map();
+const CACHE_TTL = 10 * 60 * 1000;
+
 // ── MATÉRIA COMPLETA ──
 app.get('/materia', async (req, res) => {
   const { url } = req.query;
-  console.log(`[${new Date().toISOString()}] GET /materia — url: ${url || 'não informada'}`);
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
+
+  const cached = cacheMaterias.get(url);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    console.log(`[MATÉRIA] Cache: ${url}`);
+    return res.json(cached.data);
+  }
+
+  console.log(`[MATÉRIA] Scraping: ${url}`);
 
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -143,32 +156,22 @@ app.get('/materia', async (req, res) => {
   ];
 
   let response = null;
-  for (const ua of userAgents) {
-    try {
-      console.log(`[${new Date().toISOString()}] /materia — tentando User-Agent: ${ua.substring(0, 40)}...`);
-      response = await axios.get(url, {
+  try {
+    response = await Promise.any(userAgents.map(ua =>
+      axios.get(url, {
         headers: { 'User-Agent': ua, 'Accept-Language': 'pt-BR,pt;q=0.9', 'Referer': 'https://www.google.com/' },
-        timeout: 15000,
+        timeout: 10000,
         maxRedirects: 5,
-      });
-      if (response.status === 200) {
-        console.log(`[${new Date().toISOString()}] /materia — acesso OK com status ${response.status}`);
-        break;
-      }
-    } catch (e) {
-      console.warn(`[${new Date().toISOString()}] /materia — falhou com esse User-Agent: ${e.message}`);
-      continue;
-    }
-  }
-
-  if (!response) {
-    console.error(`[${new Date().toISOString()}] /materia — todos os User-Agents falharam`);
+      })
+    ));
+  } catch {
     return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
   }
 
   try {
     const $ = cheerio.load(response.data);
     const titulo = $('h1').first().text().trim();
+
     $('script,style,nav,header,footer,aside,figure,figcaption').remove();
     $('[class*="ad"],[class*="banner"],[class*="related"],[class*="newsletter"],[class*="paywall"]').remove();
     let paragrafos = [];
@@ -181,10 +184,25 @@ app.get('/materia', async (req, res) => {
       if (encontrados.length >= 3) { paragrafos = encontrados; break; }
     }
     const texto = [...new Set(paragrafos)].join('\n\n');
-    console.log(`[${new Date().toISOString()}] /materia — título: "${titulo}" | parágrafos: ${paragrafos.length}`);
-    res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
+
+    let autor = '';
+    try {
+      const isoMatch = response.data.match(/ISOMORPHIC_DATA__="([^"]{100,})"/);
+      if (isoMatch) {
+        const decoded = decodeURIComponent(isoMatch[1]);
+        const compMatch = decoded.match(/"authors_complement":"(\{[^}]*\})"/);
+        if (compMatch) {
+          const obj = JSON.parse(compMatch[1].replace(/\\"/g, '"'));
+          const nomes = Object.values(obj).filter(v => typeof v === 'string' && v.length > 1);
+          if (nomes.length) autor = nomes[0];
+        }
+      }
+    } catch {}
+
+    const result = { ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto), autor: sanitizar(autor) };
+    cacheMaterias.set(url, { ts: Date.now(), data: result });
+    res.json(result);
   } catch (e) {
-    console.error(`[${new Date().toISOString()}] /materia — erro ao parsear HTML: ${e.message}`);
     res.status(500).json({ ok: false, erro: e.message });
   }
 });
@@ -193,14 +211,13 @@ app.get('/materia', async (req, res) => {
 // Recebe fotoUrl, titulo e nomeFoto (customizado pelo app)
 app.post('/upload-foto', async (req, res) => {
   const { fotoUrl, titulo, nomeFoto } = req.body;
-  console.log(`[${new Date().toISOString()}] POST /upload-foto — fotoUrl: ${fotoUrl} | titulo: ${titulo} | nomeFoto: ${nomeFoto}`);
 
   if (!fotoUrl || !titulo) {
-    console.warn(`[${new Date().toISOString()}] /upload-foto — fotoUrl ou titulo ausente`);
     return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
   }
+  const ip = req.ip || req.socket.remoteAddress;
+  const phpSessionId = sessoes.get(ip);
   if (!phpSessionId) {
-    console.warn(`[${new Date().toISOString()}] /upload-foto — cookie não encontrado`);
     return res.status(401).json({ ok: false, erro: 'Cookie não encontrado. Abra o NextSite com o favorito Tanaka Sports primeiro!' });
   }
 
@@ -214,7 +231,6 @@ app.post('/upload-foto', async (req, res) => {
 
   try {
     // 1. Faz o download da imagem no servidor (evita bloqueio de CORS no celular)
-    console.log(`[${new Date().toISOString()}] /upload-foto — baixando imagem: ${fotoUrl}`);
     const imgRes = await axios.get(fotoUrl, {
       responseType: 'arraybuffer',
       timeout: 20000,
@@ -233,7 +249,6 @@ app.post('/upload-foto', async (req, res) => {
     else if (ct.includes('webp')) ext = 'webp';
 
     const nomeArquivo = `${nomeSlug}.${ext}`;
-    console.log(`[${new Date().toISOString()}] /upload-foto — imagem baixada | tipo: ${ct} | arquivo: ${nomeArquivo}`);
 
     // 3. Monta o FormData e envia ao NextSite
     const form = new FormData();
@@ -264,12 +279,13 @@ app.post('/upload-foto', async (req, res) => {
       }
     );
 
-    console.log(`[${new Date().toISOString()}] /upload-foto — resposta NextSite: status ${uploadRes.status} | body: ${JSON.stringify(uploadRes.data).substring(0, 200)}`);
+    // Loga a resposta do NextSite para debug
+    console.log(`[UPLOAD] Foto enviada: ${nomeArquivo} → status ${uploadRes.status}`);
 
     res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaExibicao });
 
   } catch (e) {
-    console.error('Erro upload-foto:', e.message);
+    console.error(`[UPLOAD] Erro: ${e.message}`);
     // Detalha o erro para a Duda ver no app
     let mensagem = e.message;
     if (e.response) {

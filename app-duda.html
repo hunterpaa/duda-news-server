@@ -280,7 +280,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
 </div>
 
 <script>
-const SERVER = 'https://duda-news-server.onrender.com';
+const SERVER = 'http://localhost:3000';
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
 
 window.onload = () => {
@@ -381,14 +381,17 @@ function renderMaterias(lista) {
       const btn = document.createElement('button');
       btn.className = 'btn primary small';
       btn.textContent = 'Usar →';
-      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo));
+      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo, m.autor));
       item.appendChild(btn);
     }
     div.appendChild(item);
   });
 }
 
-async function carregarMateria(link, titulo) {
+async function carregarMateria(link, titulo, autorBruto) {
+  const autorLimpo = (autorBruto && !autorBruto.toLowerCase().includes('estadão') && !autorBruto.toLowerCase().includes('estadao')) ? autorBruto : '';
+  const autor = autorLimpo || 'Maria Eduarda';
+  document.getElementById('edit-titulo')._autor = autor;
   showStatus('s1-status', 'loading', '<span class="spinner"></span> Carregando texto completo...');
   document.getElementById('edit-titulo').value = titulo;
   document.getElementById('edit-texto').value = '';
@@ -399,8 +402,10 @@ async function carregarMateria(link, titulo) {
       document.getElementById('edit-titulo').value = data.titulo || titulo;
       document.getElementById('edit-titulo')._link = link;
       document.getElementById('edit-texto').value = data.texto || '';
+      if (data.autor) document.getElementById('edit-titulo')._autor = data.autor;
       updateCount();
-      showStatus('s1-status', 'success', '✅ Matéria carregada! Revise e siga em frente 🌸');
+      const autorMsg = data.autor ? ` · Autor: ${data.autor}` : '';
+      showStatus('s1-status', 'success', `✅ Matéria carregada!${autorMsg} Revise e siga em frente 🌸`);
     } else {
       showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
     }
@@ -437,21 +442,18 @@ async function goStep3() {
   }
   hideStatus('s2-status');
 
-  // Reseta passo 3
   document.getElementById('foto-url').value = '';
   document.getElementById('foto-preview-manual').style.display = 'none';
   document.getElementById('aviso-url').style.display = 'none';
   document.getElementById('btn-confirmar-foto').disabled = true;
   hideStatus('foto-upload-status');
 
-  // Gera sugestão de nome curto
   const sugestao = gerarNomeCurto(titulo);
   document.getElementById('sugestao-nome').textContent = sugestao;
   document.getElementById('foto-nome').value = sugestao;
 
-  // Monta busca Google Imagens
   const palavrasChave = extrairPalavrasChaveSync(titulo);
-  const busca = palavrasChave + ' futebol 2026';
+  const busca = palavrasChave + ' futebol ' + new Date().getFullYear();
   document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(busca)}&udm=2`;
 
   document.getElementById('step3').style.display = 'block';
@@ -460,7 +462,6 @@ async function goStep3() {
   scrollToCard('step3');
 }
 
-// Gera nome CURTO para salvar no NextSite — ex: "gremio-inter" ou "brasil-copa"
 function gerarNomeCurto(titulo) {
   const stop = new Set([
     'de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem',
@@ -472,12 +473,11 @@ function gerarNomeCurto(titulo) {
     'novo','nova','boa','bom','grande','quando','onde','quem','seu','sua',
   ]);
   const palavras = titulo
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // remove acentos
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
     .filter(p => p.length > 2 && !stop.has(p.toLowerCase()));
 
-  // Prioriza nomes próprios (iniciam com maiúscula)
   const proprias = palavras.filter(p => /^[A-Z]/.test(p));
   const demais = palavras.filter(p => /^[a-z]/.test(p));
 
@@ -505,14 +505,11 @@ function extrairPalavrasChaveSync(titulo) {
   return [...new Set([...proprias, ...demais])].slice(0, 5).join(' ');
 }
 
-// Verifica se é URL direta de imagem ou URL de página
 function isUrlDiretaImagem(url) {
   try {
     const u = new URL(url);
     const path = u.pathname.toLowerCase();
-    // Extensões de imagem comuns
     if (/\.(jpg|jpeg|png|webp|gif|bmp|avif)(\?.*)?$/.test(path)) return true;
-    // Domínios conhecidos de CDN de imagem
     if (u.hostname.includes('googleusercontent') || u.hostname.includes('gstatic') ||
         u.hostname.includes('twimg') || u.hostname.includes('fbcdn') ||
         u.hostname.includes('media') || u.hostname.includes('img') ||
@@ -522,7 +519,6 @@ function isUrlDiretaImagem(url) {
   } catch(e) { return false; }
 }
 
-// Verifica se parece URL de página (google imagens, etc)
 function pareceUrlDePagina(url) {
   try {
     const u = new URL(url);
@@ -542,7 +538,6 @@ function previewFotoUrl() {
   const preview = document.getElementById('foto-preview-manual');
   const img = document.getElementById('foto-img-manual');
 
-  // Reseta as cores de aviso
   aviso.style.color = "#e65100";
   img.style.display = 'block';
 
@@ -553,7 +548,6 @@ function previewFotoUrl() {
     return;
   }
 
-  // Verifica se a imagem é um código Base64 (miniatura do Google)
   if (url.startsWith('data:image')) {
     aviso.innerHTML = "⚠️ Você copiou a miniatura. Clique na foto no Google para carregar e só depois copie o link!";
     aviso.style.display = 'block';
@@ -569,7 +563,6 @@ function previewFotoUrl() {
     return;
   }
 
-  // Verifica se colou o link de uma página em vez do link da foto
   if (pareceUrlDePagina(url)) {
     aviso.innerHTML = "⚠️ Isso parece o link de uma página. Copie o link DIRETO da foto.";
     aviso.style.display = 'block';
@@ -582,19 +575,15 @@ function previewFotoUrl() {
   preview.style.display = 'block';
   img.src = url;
 
-  // Se a prévia carregar perfeitamente
   img.onload = () => {
     btn.disabled = false;
   };
 
-  // Se o site blindar a prévia (CORS), libera o envio mesmo assim!
   img.onerror = () => {
-    img.style.display = 'none'; // Esconde o ícone quebrado
+    img.style.display = 'none';
     aviso.innerHTML = "👀 <i>A prévia foi bloqueada pelo site, mas o link é válido. Pode clicar em Enviar!</i>";
     aviso.style.color = "#888";
     aviso.style.display = 'block';
-    
-    // Libera o botão porque o backend (server.js) consegue baixar a foto
     if (url.length > 10) btn.disabled = false;
   };
 }
@@ -652,23 +641,23 @@ async function copiarEAbrir() {
   const titulo = document.getElementById('edit-titulo').value.trim();
   const texto = document.getElementById('edit-texto').value.trim();
   const chapeu = document.getElementById('edit-chapeu').value;
-  const fotoNome = document.getElementById('foto-nome').value.trim(); // <-- Importante!
+  const fotoNome = document.getElementById('foto-nome').value.trim();
 
-  try { 
-    await navigator.clipboard.writeText(titulo + '\n\n' + texto); 
+  try {
+    await navigator.clipboard.writeText(titulo + '\n\n' + texto);
   } catch(e) {}
 
-  // Enviando o fotoNome junto com o restante dos dados
-  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
+  const autor = document.getElementById('edit-titulo')._autor || 'Maria Eduarda';
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, autor });
   const dados = btoa(unescape(encodeURIComponent(json)));
   const url = NEXTSITE + '&tanaka=' + dados;
-  
+
   const linkAtual = document.getElementById('edit-titulo')._link || '';
   if (linkAtual) marcarPublicada(linkAtual);
 
   showStatus('s4-status', 'success', '🎉 Abrindo NextSite...');
   setTimeout(() => window.open(url, '_blank'), 400);
-  
+
   const btn = document.getElementById('btn-publicar');
   btn.textContent = '✅ Abrindo!';
   setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir NextSite'; }, 3000);

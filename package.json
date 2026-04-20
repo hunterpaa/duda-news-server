@@ -1,7 +1,7 @@
 {
-  "name": "duda-news-server",
+  "name": "tanaka-sports",
   "version": "1.0.0",
-  "description": "Servidor para buscar matérias do GaúchaZH para a Duda",
+  "description": "Servidor local Tanaka Sports da Duda",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
