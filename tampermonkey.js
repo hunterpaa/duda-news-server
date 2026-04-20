@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tanaka → NextSite (auto-preencher)
 // @namespace    http://tampermonkey.net/
-// @version      4.1
+// @version      4.2
 // @description  Preenche o formulário do NextSite automaticamente com os dados do app da Duda
 // @author       Duda & Claude
 // @match        https://admin-dc4.nextsite.com.br/t53kx1_admin/*
@@ -12,8 +12,12 @@
 (function () {
   'use strict';
 
-  // Fluxo: renovar cookie (tanaka_cookie=1)
+  // Fluxo: renovar cookie (tanaka_cookie=1) — salva no sessionStorage antes de qualquer redirect
   if (new URLSearchParams(window.location.search).get('tanaka_cookie') === '1') {
+    sessionStorage.setItem('tanaka_cookie_pending', '1');
+  }
+  if (sessionStorage.getItem('tanaka_cookie_pending') === '1') {
+    sessionStorage.removeItem('tanaka_cookie_pending');
     const match = document.cookie.match(/PHPSESSID=([^;]+)/);
     if (match) {
       const ps = JSON.stringify({ phpsessid: match[1] });
@@ -24,7 +28,7 @@
     d.innerHTML = '✅ Cookie renovado!';
     d.style.cssText = 'position:fixed;top:20px;right:20px;background:#2e7d32;color:white;padding:14px 22px;border-radius:12px;font-size:15px;font-weight:bold;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.3);font-family:sans-serif;';
     document.body.appendChild(d);
-    setTimeout(() => { d.remove(); window.close(); }, 3000);
+    setTimeout(() => { d.remove(); window.close(); }, 1500);
     return;
   }
 
