@@ -309,5 +309,17 @@ app.get('/google-imagens', (req, res) => {
   res.json({ urls });
 });
 
+// ── FOTO ENVIADA (relay app → Tampermonkey para fechar aba Google) ──
+let fotoEnviadaFlag = false;
+app.post('/foto-enviada', (req, res) => {
+  fotoEnviadaFlag = true;
+  res.json({ ok: true });
+});
+app.get('/foto-enviada', (req, res) => {
+  const foi = fotoEnviadaFlag;
+  fotoEnviadaFlag = false;
+  res.json({ foi });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));

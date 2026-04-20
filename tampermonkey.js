@@ -179,10 +179,6 @@
     (params.get('udm') === '2' || params.get('tbm') === 'isch');
   if (!isGoogleImagens) return;
 
-  // Fecha a aba quando o app confirmar que a foto foi enviada
-  window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === 'FOTO_ENVIADA') window.close();
-  });
 
   setTimeout(() => {
     const urls = [];
@@ -249,17 +245,28 @@
       try {
         window.opener.postMessage({ type: 'IMAGENS_GOOGLE', data: payload }, '*');
         enviouPorOpener = true;
+        try { window.opener.focus(); } catch(e) {} // volta foco pro app
         window.close(); // fecha imediatamente — postMessage é instantâneo
       } catch (e) {}
     }
 
     // Fallback: envia pro servidor como relay (tenta local e Render)
-    // Não fecha aqui — o app fecha via _googleWin.close() ao receber pelo polling
     if (!enviouPorOpener) {
       const body = JSON.stringify({ urls: payload });
       const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body };
       fetch('http://localhost:3000/google-imagens', opts).catch(() => {});
       fetch('https://duda-news-server.onrender.com/google-imagens', opts).catch(() => {});
+
+      // Polling: fecha a aba quando o app confirmar que a foto foi enviada
+      const ivFoto = setInterval(() => {
+        Promise.any([
+          fetch('http://localhost:3000/foto-enviada').then(r => r.json()),
+          fetch('https://duda-news-server.onrender.com/foto-enviada').then(r => r.json()),
+        ]).then(data => {
+          if (data.foi) { clearInterval(ivFoto); window.close(); }
+        }).catch(() => {});
+      }, 1500);
+      setTimeout(() => clearInterval(ivFoto), 10 * 60 * 1000); // para após 10min
     }
 
   }, 2500);

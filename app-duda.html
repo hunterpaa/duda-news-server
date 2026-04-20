@@ -639,7 +639,7 @@ async function confirmarFotoManual() {
     });
     const data = await res.json();
     if (data.ok) {
-      abaGoogle?.postMessage({ type: 'FOTO_ENVIADA' }, '*');
+      fetch(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
       showStatus('foto-upload-status', 'success', '✅ Foto enviada! 🌸');
       btn.innerHTML = '✅ Enviada!';
       setTimeout(() => goStep4(), 900);
