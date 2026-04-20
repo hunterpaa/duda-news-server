@@ -546,6 +546,17 @@ function pareceUrlDePagina(url) {
   } catch(e) { return false; }
 }
 
+function selecionarFotoDoGrid(url) {
+  document.getElementById('foto-url').value = url;
+  document.getElementById('aviso-url').style.display = 'none';
+  document.getElementById('btn-confirmar-foto').disabled = false;
+  const preview = document.getElementById('foto-preview-manual');
+  const img = document.getElementById('foto-img-manual');
+  img.src = url;
+  img.style.display = 'block';
+  preview.style.display = 'block';
+}
+
 function previewFotoUrl() {
   const url = document.getElementById('foto-url').value.trim();
   const btn = document.getElementById('btn-confirmar-foto');
@@ -714,8 +725,7 @@ function exibirGridFotos(urls) {
   function tentarUrl(img, url) {
     img.src = url;
     img.onclick = () => {
-      document.getElementById('foto-url').value = img.src;
-      previewFotoUrl();
+      selecionarFotoDoGrid(img.src);
       if (_googleWin && !_googleWin.closed) _googleWin.close();
       grid.style.display = 'none';
     };
