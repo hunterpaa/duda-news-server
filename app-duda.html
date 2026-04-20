@@ -696,7 +696,7 @@ function abrirGoogleImagens() {
   const grid = document.getElementById('google-fotos-grid');
   grid.style.display = 'none';
   grid.innerHTML = '';
-  _googleWin = window.open(url, 'googleImagens', 'width=1000,height=700');
+  _googleWin = window.open(url, '_blank');
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
   let tentativas = 0;
