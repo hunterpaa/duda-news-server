@@ -617,6 +617,7 @@ function previewFotoUrl() {
 }
 
 async function confirmarFotoManual() {
+  abaGoogle?.close();
   const url = document.getElementById('foto-url').value.trim();
   const titulo = document.getElementById('edit-titulo').value.trim();
   const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
@@ -691,14 +692,14 @@ async function copiarEAbrir() {
   setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir Diário de Cuiabá'; }, 3000);
 }
 
-let _googleWin = null;
+let abaGoogle = null;
 
 function abrirGoogleImagens() {
   const url = window._googleFotosUrl || 'https://www.google.com/search?q=futebol&udm=2';
   const grid = document.getElementById('google-fotos-grid');
   grid.style.display = 'none';
   grid.innerHTML = '';
-  _googleWin = window.open(url, '_blank');
+  abaGoogle = window.open(url, '_blank');
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
   let tentativas = 0;
@@ -728,7 +729,7 @@ function exibirGridFotos(urls) {
     img.src = url;
     img.onclick = () => {
       selecionarFotoDoGrid(img.src);
-      if (_googleWin && !_googleWin.closed) _googleWin.close();
+      if (abaGoogle && !abaGoogle.closed) abaGoogle.close();
       grid.style.display = 'none';
     };
     img.onerror = () => {
@@ -752,7 +753,7 @@ function exibirGridFotos(urls) {
 
   if (iniciais.length > 0) {
     grid.style.display = 'grid';
-    if (_googleWin && !_googleWin.closed) _googleWin.close();
+    if (abaGoogle && !abaGoogle.closed) abaGoogle.close();
   }
 }
 
