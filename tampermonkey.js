@@ -253,6 +253,5 @@
       navigator.sendBeacon('http://localhost:3000/google-imagens', blob);
     }
 
-    setTimeout(() => window.close(), 300);
   }, 2500);
 })();
