@@ -184,7 +184,7 @@
 
     // Método 1: data-it → JSON → campo ou / purl / isu
     document.querySelectorAll('[data-it]').forEach(el => {
-      if (urls.length >= 6) return;
+      if (urls.length >= 12) return;
       try {
         const data = JSON.parse(el.getAttribute('data-it'));
         const url = data.ou || data.purl || data.isu;
@@ -197,7 +197,7 @@
     if (urls.length < 6) {
       ['data-src', 'data-ow', 'data-tw'].forEach(attr => {
         document.querySelectorAll(`[${attr}]`).forEach(el => {
-          if (urls.length >= 6) return;
+          if (urls.length >= 12) return;
           const url = el.getAttribute(attr);
           if (url && /^https?:\/\/.+\.(jpg|jpeg|png|webp)/i.test(url) && !urls.includes(url))
             urls.push(url);
@@ -209,7 +209,7 @@
     if (urls.length < 6) {
       const found = document.documentElement.innerHTML.match(/https?:\/\/[^"' \s>]+\.(jpg|jpeg|png|webp)/gi) || [];
       found.forEach(url => {
-        if (urls.length >= 6 || urls.includes(url)) return;
+        if (urls.length >= 12 || urls.includes(url)) return;
         // Filtra miniaturas pequenas e URLs de UI do Google
         if (url.includes('google.com') || url.includes('gstatic.com')) return;
         urls.push(url);
@@ -218,7 +218,7 @@
 
     if (urls.length === 0) return;
 
-    const payload = urls.slice(0, 6);
+    const payload = urls.slice(0, 12);
 
     // Tenta postMessage para o app (funciona se window.opener não for null)
     let enviouPorOpener = false;

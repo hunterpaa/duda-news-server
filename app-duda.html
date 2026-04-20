@@ -707,20 +707,38 @@ function abrirGoogleImagens() {
 function exibirGridFotos(urls) {
   const grid = document.getElementById('google-fotos-grid');
   grid.innerHTML = '';
-  urls.forEach(url => {
-    const img = document.createElement('img');
+
+  // Fila de reserva: começa com tudo, os 6 primeiros vão para o grid
+  const fila = [...urls];
+
+  function tentarUrl(img, url) {
     img.src = url;
-    img.referrerPolicy = 'no-referrer';
-    img.title = 'Clique para usar esta foto';
     img.onclick = () => {
-      document.getElementById('foto-url').value = url;
+      document.getElementById('foto-url').value = img.src;
       previewFotoUrl();
       if (_googleWin && !_googleWin.closed) _googleWin.close();
       grid.style.display = 'none';
     };
+    img.onerror = () => {
+      if (fila.length > 0) {
+        tentarUrl(img, fila.shift()); // tenta próxima da fila
+      } else {
+        img.remove(); // sem reserva, remove o slot
+        if (grid.children.length === 0) grid.style.display = 'none';
+      }
+    };
+  }
+
+  const iniciais = fila.splice(0, 6);
+  iniciais.forEach(url => {
+    const img = document.createElement('img');
+    img.referrerPolicy = 'no-referrer';
+    img.title = 'Clique para usar esta foto';
+    tentarUrl(img, url);
     grid.appendChild(img);
   });
-  if (urls.length > 0) {
+
+  if (iniciais.length > 0) {
     grid.style.display = 'grid';
     if (_googleWin && !_googleWin.closed) _googleWin.close();
   }
