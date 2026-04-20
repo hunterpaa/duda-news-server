@@ -5,6 +5,7 @@
 // @description  Preenche o formulário do NextSite automaticamente com os dados do app da Duda
 // @author       Duda & Claude
 // @match        https://admin-dc4.nextsite.com.br/t53kx1_admin/*
+// @match        https://www.google.com/search*
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
@@ -167,4 +168,74 @@
     window.addEventListener('load', () => setTimeout(preencher, 1500));
   }
 
+})();
+
+// ─── Google Imagens HD ───────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  const params = new URLSearchParams(window.location.search);
+  const isGoogleImagens = window.location.hostname === 'www.google.com' &&
+    (params.get('udm') === '2' || params.get('tbm') === 'isch');
+  if (!isGoogleImagens) return;
+
+  setTimeout(() => {
+    const urls = [];
+
+    // Método 1: data-it → JSON → campo ou / purl / isu
+    document.querySelectorAll('[data-it]').forEach(el => {
+      if (urls.length >= 6) return;
+      try {
+        const data = JSON.parse(el.getAttribute('data-it'));
+        const url = data.ou || data.purl || data.isu;
+        if (url && /\.(jpg|jpeg|png|webp)/i.test(url) && !urls.includes(url))
+          urls.push(url);
+      } catch (e) {}
+    });
+
+    // Método 2: outros atributos do Google
+    if (urls.length < 6) {
+      ['data-src', 'data-ow', 'data-tw'].forEach(attr => {
+        document.querySelectorAll(`[${attr}]`).forEach(el => {
+          if (urls.length >= 6) return;
+          const url = el.getAttribute(attr);
+          if (url && /^https?:\/\/.+\.(jpg|jpeg|png|webp)/i.test(url) && !urls.includes(url))
+            urls.push(url);
+        });
+      });
+    }
+
+    // Método 3: fallback — varredura no HTML por URLs de imagem
+    if (urls.length < 6) {
+      const found = document.documentElement.innerHTML.match(/https?:\/\/[^"' \s>]+\.(jpg|jpeg|png|webp)/gi) || [];
+      found.forEach(url => {
+        if (urls.length >= 6 || urls.includes(url)) return;
+        // Filtra miniaturas pequenas e URLs de UI do Google
+        if (url.includes('google.com') || url.includes('gstatic.com')) return;
+        urls.push(url);
+      });
+    }
+
+    if (urls.length === 0) return;
+
+    const payload = urls.slice(0, 6);
+
+    // Tenta postMessage para o app (funciona se window.opener não for null)
+    let enviouPorOpener = false;
+    if (window.opener && !window.opener.closed) {
+      try {
+        window.opener.postMessage({ type: 'IMAGENS_GOOGLE', data: payload }, '*');
+        enviouPorOpener = true;
+      } catch (e) {}
+    }
+
+    // Fallback: envia pro servidor local como relay
+    if (!enviouPorOpener) {
+      fetch('http://localhost:3000/google-imagens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: payload })
+      }).catch(() => {});
+    }
+  }, 2500);
 })();

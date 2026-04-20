@@ -297,5 +297,17 @@ app.post('/upload-foto', async (req, res) => {
   }
 });
 
+// ── GOOGLE IMAGENS (relay Tampermonkey → app) ──
+let googleImagensCache = [];
+app.post('/google-imagens', (req, res) => {
+  googleImagensCache = req.body.urls || [];
+  res.json({ ok: true });
+});
+app.get('/google-imagens', (req, res) => {
+  const urls = googleImagensCache;
+  googleImagensCache = [];
+  res.json({ urls });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));

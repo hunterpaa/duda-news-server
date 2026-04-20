@@ -70,6 +70,20 @@ textarea:focus { outline: none; border-color: var(--pink); }
 .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── GRID FOTOS GOOGLE ── */
+#google-fotos-grid {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+#google-fotos-grid img {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  border-radius: 8px; border: 2px solid transparent;
+  cursor: pointer; transition: border-color .2s, transform .15s;
+}
+#google-fotos-grid img:hover { border-color: #4285f4; transform: scale(1.03); }
+
 /* ── CAMPO LEGENDA / NOME FOTO ── */
 .nome-foto-box {
   background: #fff8e1;
@@ -205,9 +219,10 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
       <div style="background:#e8f0fe;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
         <p style="font-size:14px;color:#333;margin-bottom:10px;line-height:1.5;">
-          Abre o Google Imagens com a busca pronta. No celular: <strong>toque e segure</strong> na foto → <strong>"Copiar link da imagem"</strong> e cole abaixo.
+          Abre o Google Imagens com a busca pronta e carrega as fotos HD automaticamente aqui.
         </p>
-        <a id="btn-google-fotos" href="#" target="_blank" class="btn full" style="background:#4285f4;color:white;border-color:#4285f4;">🔍 Abrir Google Imagens</a>
+        <button id="btn-google-fotos" onclick="abrirGoogleImagens()" class="btn full" style="background:#4285f4;color:white;border-color:#4285f4;">🔍 Abrir Google Imagens</button>
+        <div id="google-fotos-grid"></div>
       </div>
 
       <div style="background:#f0f7ff;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
@@ -456,7 +471,7 @@ async function goStep3() {
 
   const palavrasChave = extrairPalavrasChaveSync(titulo);
   const busca = palavrasChave + ' futebol ' + new Date().getFullYear();
-  document.getElementById('btn-google-fotos').href = `https://www.google.com/search?q=${encodeURIComponent(busca)}&udm=2`;
+  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(busca)}&udm=2`;
 
   document.getElementById('step3').style.display = 'block';
   document.getElementById('step4').style.display = 'none';
@@ -664,6 +679,59 @@ async function copiarEAbrir() {
   btn.textContent = '✅ Abrindo!';
   setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir Diário de Cuiabá'; }, 3000);
 }
+
+let _googleWin = null;
+
+function abrirGoogleImagens() {
+  const url = window._googleFotosUrl || 'https://www.google.com/search?q=futebol&udm=2';
+  const grid = document.getElementById('google-fotos-grid');
+  grid.style.display = 'none';
+  grid.innerHTML = '';
+  _googleWin = window.open(url, 'googleImagens', 'width=1000,height=700');
+
+  // Polling no servidor como fallback (caso window.opener seja null no Google)
+  let tentativas = 0;
+  const poll = setInterval(async () => {
+    tentativas++;
+    if (tentativas > 30) { clearInterval(poll); return; } // para após 30s
+    if (grid.children.length > 0) { clearInterval(poll); return; } // já recebeu por postMessage
+    try {
+      const res = await fetch(`${SERVER}/google-imagens`);
+      const data = await res.json();
+      if (data.urls && data.urls.length > 0) {
+        clearInterval(poll);
+        exibirGridFotos(data.urls);
+      }
+    } catch(e) {}
+  }, 1000);
+}
+
+function exibirGridFotos(urls) {
+  const grid = document.getElementById('google-fotos-grid');
+  grid.innerHTML = '';
+  urls.forEach(url => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.referrerPolicy = 'no-referrer';
+    img.title = 'Clique para usar esta foto';
+    img.onclick = () => {
+      document.getElementById('foto-url').value = url;
+      previewFotoUrl();
+      if (_googleWin && !_googleWin.closed) _googleWin.close();
+      grid.style.display = 'none';
+    };
+    grid.appendChild(img);
+  });
+  if (urls.length > 0) {
+    grid.style.display = 'grid';
+    if (_googleWin && !_googleWin.closed) _googleWin.close();
+  }
+}
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'IMAGENS_GOOGLE') return;
+  exibirGridFotos(e.data.data || []);
+});
 
 function updateCount() {
   document.getElementById('char-count').textContent =
