@@ -247,15 +247,12 @@
       } catch (e) {}
     }
 
-    // Fallback: envia pro servidor local como relay
+    // Fallback: envia pro servidor local como relay via sendBeacon (funciona mesmo ao fechar)
     if (!enviouPorOpener) {
-      fetch('http://localhost:3000/google-imagens', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: payload })
-      }).catch(() => {});
+      const blob = new Blob([JSON.stringify({ urls: payload })], { type: 'application/json' });
+      navigator.sendBeacon('http://localhost:3000/google-imagens', blob);
     }
 
-    window.close();
+    setTimeout(() => window.close(), 300);
   }, 2500);
 })();
