@@ -656,7 +656,7 @@ async function copiarEAbrir() {
   if (linkAtual) marcarPublicada(linkAtual);
 
   showStatus('s4-status', 'success', '🎉 Abrindo NextSite...');
-  setTimeout(() => window.open(url, '_blank'), 400);
+  setTimeout(() => window.open(url, '_self'), 400);
 
   const btn = document.getElementById('btn-publicar');
   btn.textContent = '✅ Abrindo!';
