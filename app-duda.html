@@ -381,14 +381,17 @@ function renderMaterias(lista) {
       const btn = document.createElement('button');
       btn.className = 'btn primary small';
       btn.textContent = 'Usar →';
-      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo));
+      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo, m.autor));
       item.appendChild(btn);
     }
     div.appendChild(item);
   });
 }
 
-async function carregarMateria(link, titulo) {
+async function carregarMateria(link, titulo, autorBruto) {
+  const autorLimpo = (autorBruto && !autorBruto.toLowerCase().includes('estadão') && !autorBruto.toLowerCase().includes('estadao')) ? autorBruto : '';
+  const autor = autorLimpo || 'Maria Eduarda';
+  document.getElementById('edit-titulo')._autor = autor;
   showStatus('s1-status', 'loading', '<span class="spinner"></span> Carregando texto completo...');
   document.getElementById('edit-titulo').value = titulo;
   document.getElementById('edit-texto').value = '';
@@ -399,8 +402,10 @@ async function carregarMateria(link, titulo) {
       document.getElementById('edit-titulo').value = data.titulo || titulo;
       document.getElementById('edit-titulo')._link = link;
       document.getElementById('edit-texto').value = data.texto || '';
+      if (data.autor) document.getElementById('edit-titulo')._autor = data.autor;
       updateCount();
-      showStatus('s1-status', 'success', '✅ Matéria carregada! Revise e siga em frente 🌸');
+      const autorMsg = data.autor ? ` · Autor: ${data.autor}` : '';
+      showStatus('s1-status', 'success', `✅ Matéria carregada!${autorMsg} Revise e siga em frente 🌸`);
     } else {
       showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
     }
@@ -642,7 +647,8 @@ async function copiarEAbrir() {
     await navigator.clipboard.writeText(titulo + '\n\n' + texto);
   } catch(e) {}
 
-  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome });
+  const autor = document.getElementById('edit-titulo')._autor || 'Maria Eduarda';
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, autor });
   const dados = btoa(unescape(encodeURIComponent(json)));
   const url = NEXTSITE + '&tanaka=' + dados;
 

@@ -133,10 +133,20 @@ app.get('/materias', async (req, res) => {
   }
 });
 
+const cacheMaterias = new Map();
+const CACHE_TTL = 10 * 60 * 1000;
+
 // ── MATÉRIA COMPLETA ──
 app.get('/materia', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
+
+  const cached = cacheMaterias.get(url);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    console.log(`[MATÉRIA] Cache: ${url}`);
+    return res.json(cached.data);
+  }
+
   console.log(`[MATÉRIA] Scraping: ${url}`);
 
   const userAgents = [
@@ -146,22 +156,22 @@ app.get('/materia', async (req, res) => {
   ];
 
   let response = null;
-  for (const ua of userAgents) {
-    try {
-      response = await axios.get(url, {
+  try {
+    response = await Promise.any(userAgents.map(ua =>
+      axios.get(url, {
         headers: { 'User-Agent': ua, 'Accept-Language': 'pt-BR,pt;q=0.9', 'Referer': 'https://www.google.com/' },
-        timeout: 15000,
+        timeout: 10000,
         maxRedirects: 5,
-      });
-      if (response.status === 200) break;
-    } catch (e) { continue; }
+      })
+    ));
+  } catch {
+    return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
   }
-
-  if (!response) return res.status(500).json({ ok: false, erro: 'Não foi possível acessar a matéria' });
 
   try {
     const $ = cheerio.load(response.data);
     const titulo = $('h1').first().text().trim();
+
     $('script,style,nav,header,footer,aside,figure,figcaption').remove();
     $('[class*="ad"],[class*="banner"],[class*="related"],[class*="newsletter"],[class*="paywall"]').remove();
     let paragrafos = [];
@@ -174,7 +184,24 @@ app.get('/materia', async (req, res) => {
       if (encontrados.length >= 3) { paragrafos = encontrados; break; }
     }
     const texto = [...new Set(paragrafos)].join('\n\n');
-    res.json({ ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto) });
+
+    let autor = '';
+    try {
+      const isoMatch = response.data.match(/ISOMORPHIC_DATA__="([^"]{100,})"/);
+      if (isoMatch) {
+        const decoded = decodeURIComponent(isoMatch[1]);
+        const compMatch = decoded.match(/"authors_complement":"(\{[^}]*\})"/);
+        if (compMatch) {
+          const obj = JSON.parse(compMatch[1].replace(/\\"/g, '"'));
+          const nomes = Object.values(obj).filter(v => typeof v === 'string' && v.length > 1);
+          if (nomes.length) autor = nomes[0];
+        }
+      }
+    } catch {}
+
+    const result = { ok: true, titulo: sanitizar(titulo), texto: sanitizar(texto), autor: sanitizar(autor) };
+    cacheMaterias.set(url, { ts: Date.now(), data: result });
+    res.json(result);
   } catch (e) {
     res.status(500).json({ ok: false, erro: e.message });
   }
