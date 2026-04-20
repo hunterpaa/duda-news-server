@@ -469,9 +469,7 @@ async function goStep3() {
   document.getElementById('sugestao-nome').textContent = sugestao;
   document.getElementById('foto-nome').value = sugestao;
 
-  const palavrasChave = extrairPalavrasChaveSync(titulo);
-  const busca = palavrasChave + ' futebol ' + new Date().getFullYear();
-  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(busca)}&udm=2`;
+  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&udm=2`;
 
   document.getElementById('step3').style.display = 'block';
   document.getElementById('step4').style.display = 'none';
