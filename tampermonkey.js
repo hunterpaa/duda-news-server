@@ -244,10 +244,12 @@
       try {
         window.opener.postMessage({ type: 'IMAGENS_GOOGLE', data: payload }, '*');
         enviouPorOpener = true;
+        window.close(); // fecha imediatamente — postMessage é instantâneo
       } catch (e) {}
     }
 
     // Fallback: envia pro servidor como relay (tenta local e Render)
+    // Não fecha aqui — o app fecha via _googleWin.close() ao receber pelo polling
     if (!enviouPorOpener) {
       const body = JSON.stringify({ urls: payload });
       const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body };
