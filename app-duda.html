@@ -829,26 +829,14 @@ async function classificarChapeu(titulo, texto) {
   showStatus('s1-status', 'loading', '<span class="spinner"></span> 🤖 Identificando esporte...');
   const primeiras200 = texto.split(/\s+/).slice(0, 200).join(' ');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`${SERVER}/classificar-chapeu`, {
       method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-request-header': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 20,
-        messages: [{
-          role: 'user',
-          content: `Você é um classificador de matérias esportivas para um jornal brasileiro.\nLeia o título e texto abaixo e responda APENAS com o nome do esporte em CAIXA ALTA, exatamente como aparece nessa lista:\nFUTEBOL, BASQUETE, VÔLEI, TÊNIS, FÓRMULA 1, NATAÇÃO, ATLETISMO, GINÁSTICA, MMA / UFC, BOXE, CICLISMO, SURFE, SKATE, AUTOMOBILISMO, RUGBY, HANDEBOL, BEISEBOL, GOLFE, HIPISMO, ESGRIMA, JUDÔ, WRESTLING, HÓQUEI, CRÍQUETE, PADEL, FUTSAL, BEACH TENNIS.\n\nResponda SOMENTE o nome do esporte. Sem explicação. Sem pontuação extra.\n\nTítulo: ${titulo}\nTexto: ${primeiras200}`,
-        }],
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, texto: primeiras200, apiKey: key }),
     });
     const data = await res.json();
-    console.log('[Chapéu] Resposta da API:', data);
-    const resposta = data?.content?.[0]?.text?.trim().toUpperCase();
+    console.log('[Chapéu] Resposta:', data);
+    const resposta = data?.chapeu?.trim().toUpperCase();
     if (resposta && CHAPEUS.includes(resposta)) {
       document.getElementById('edit-chapeu').value = resposta;
       showStatus('s1-status', 'success', `✅ Esporte identificado: ${resposta} 🌸`);

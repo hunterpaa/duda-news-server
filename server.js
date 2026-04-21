@@ -317,6 +317,33 @@ app.post('/upload-foto', async (req, res) => {
   }
 });
 
+// ── CLASSIFICAR CHAPÉU (proxy para API Anthropic — evita CORS do browser) ──
+app.post('/classificar-chapeu', async (req, res) => {
+  const { titulo, texto, apiKey } = req.body;
+  if (!titulo || !apiKey) return res.status(400).json({ ok: false, erro: 'titulo e apiKey são obrigatórios' });
+  try {
+    const r = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 10,
+      system: 'Você é um classificador de esportes. Responda APENAS com o nome do esporte em CAIXA ALTA: FUTEBOL, BASQUETE, VÔLEI, TÊNIS, FÓRMULA 1, NATAÇÃO, ATLETISMO, GINÁSTICA, MMA / UFC, BOXE, CICLISMO, SURFE, SKATE, AUTOMOBILISMO, RUGBY, HANDEBOL, BEISEBOL, GOLFE, HIPISMO, JUDÔ, HÓQUEI, PADEL, FUTSAL, BEACH TENNIS. Só a palavra, sem explicação.',
+      messages: [{ role: 'user', content: `Título: ${titulo}\nTexto: ${(texto || '').substring(0, 500)}` }],
+    }, {
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      timeout: 10000,
+    });
+    const chapeu = r.data.content[0].text.trim();
+    console.log(`[CHAPÉU] ${chapeu} ← "${titulo.substring(0, 50)}"`);
+    res.json({ ok: true, chapeu });
+  } catch(e) {
+    console.error('[CHAPÉU] Erro:', e.message);
+    res.status(500).json({ ok: false, erro: traduzirErro(e) });
+  }
+});
+
 // ── GOOGLE IMAGENS (relay Tampermonkey → app) ──
 let googleImagensCache = [];
 app.post('/google-imagens', (req, res) => {
