@@ -189,12 +189,33 @@ textarea:focus { outline: none; border-color: var(--pink); }
       <div class="field">
         <label>Chapéu ⚽ (categoria)</label>
         <select id="edit-chapeu">
-          <option value="Futebol">Futebol</option>
-          <option value="Basquete">Basquete</option>
-          <option value="Vôlei">Vôlei</option>
-          <option value="Tênis">Tênis</option>
-          <option value="Fórmula 1">Fórmula 1</option>
-          <option value="Outros">Outros</option>
+          <option value="FUTEBOL">FUTEBOL</option>
+          <option value="BASQUETE">BASQUETE</option>
+          <option value="VÔLEI">VÔLEI</option>
+          <option value="TÊNIS">TÊNIS</option>
+          <option value="FÓRMULA 1">FÓRMULA 1</option>
+          <option value="NATAÇÃO">NATAÇÃO</option>
+          <option value="ATLETISMO">ATLETISMO</option>
+          <option value="GINÁSTICA">GINÁSTICA</option>
+          <option value="MMA / UFC">MMA / UFC</option>
+          <option value="BOXE">BOXE</option>
+          <option value="CICLISMO">CICLISMO</option>
+          <option value="SURFE">SURFE</option>
+          <option value="SKATE">SKATE</option>
+          <option value="AUTOMOBILISMO">AUTOMOBILISMO</option>
+          <option value="RUGBY">RUGBY</option>
+          <option value="HANDEBOL">HANDEBOL</option>
+          <option value="BEISEBOL">BEISEBOL</option>
+          <option value="GOLFE">GOLFE</option>
+          <option value="HIPISMO">HIPISMO</option>
+          <option value="ESGRIMA">ESGRIMA</option>
+          <option value="JUDÔ">JUDÔ</option>
+          <option value="WRESTLING">WRESTLING</option>
+          <option value="HÓQUEI">HÓQUEI</option>
+          <option value="CRÍQUETE">CRÍQUETE</option>
+          <option value="PADEL">PADEL</option>
+          <option value="FUTSAL">FUTSAL</option>
+          <option value="BEACH TENNIS">BEACH TENNIS</option>
         </select>
       </div>
       <div class="field">
@@ -284,6 +305,8 @@ textarea:focus { outline: none; border-color: var(--pink); }
       <div class="field"><label>E-mail 📧</label><input type="email" id="cfg-user" placeholder="duda@diariodecuiaba.com.br" autocomplete="email" /></div>
       <div class="field"><label>Senha 🔑</label><input type="password" id="cfg-pass" placeholder="••••••••" autocomplete="current-password" /></div>
       <div class="divider"></div>
+      <div class="field"><label>Chave Anthropic 🤖 (chapéu automático)</label><input type="password" id="cfg-anthropic" placeholder="sk-ant-..." autocomplete="off" /></div>
+      <div class="divider"></div>
       <div style="font-size:12px;color:#aaa;margin-bottom:4px;font-weight:600;">Servidor</div>
       <div class="url-mono">https://duda-news-server.onrender.com</div>
       <div class="btn-row" style="margin-top:1rem;">
@@ -305,6 +328,7 @@ const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.
 window.onload = () => {
   document.getElementById('cfg-user').value = localStorage.getItem('duda_user') || '';
   document.getElementById('cfg-pass').value = localStorage.getItem('duda_pass') || '';
+  document.getElementById('cfg-anthropic').value = localStorage.getItem('anthropic_key') || '';
 };
 
 function switchTab(t) {
@@ -425,6 +449,7 @@ async function carregarMateria(link, titulo, autorBruto) {
       updateCount();
       const autorMsg = data.autor ? ` · Autor: ${data.autor}` : '';
       showStatus('s1-status', 'success', `✅ Matéria carregada!${autorMsg} Revise e siga em frente 🌸`);
+      classificarChapeu(data.titulo || titulo, data.texto || '');
     } else {
       showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
     }
@@ -788,8 +813,42 @@ function updateCount() {
 function salvarConfig() {
   localStorage.setItem('duda_user', document.getElementById('cfg-user').value.trim());
   localStorage.setItem('duda_pass', document.getElementById('cfg-pass').value);
+  const key = document.getElementById('cfg-anthropic').value.trim();
+  if (key) localStorage.setItem('anthropic_key', key);
   showStatus('cfg-status', 'success', '💾 Salvo com sucesso!');
   setTimeout(() => hideStatus('cfg-status'), 2000);
+}
+
+const CHAPEUS = ['FUTEBOL','BASQUETE','VÔLEI','TÊNIS','FÓRMULA 1','NATAÇÃO','ATLETISMO','GINÁSTICA','MMA / UFC','BOXE','CICLISMO','SURFE','SKATE','AUTOMOBILISMO','RUGBY','HANDEBOL','BEISEBOL','GOLFE','HIPISMO','ESGRIMA','JUDÔ','WRESTLING','HÓQUEI','CRÍQUETE','PADEL','FUTSAL','BEACH TENNIS'];
+
+async function classificarChapeu(titulo, texto) {
+  const key = localStorage.getItem('anthropic_key');
+  if (!key) return;
+  const primeiras200 = texto.split(/\s+/).slice(0, 200).join(' ');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-request-header': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 20,
+        messages: [{
+          role: 'user',
+          content: `Você é um classificador de matérias esportivas para um jornal brasileiro.\nLeia o título e texto abaixo e responda APENAS com o nome do esporte em CAIXA ALTA, exatamente como aparece nessa lista:\nFUTEBOL, BASQUETE, VÔLEI, TÊNIS, FÓRMULA 1, NATAÇÃO, ATLETISMO, GINÁSTICA, MMA / UFC, BOXE, CICLISMO, SURFE, SKATE, AUTOMOBILISMO, RUGBY, HANDEBOL, BEISEBOL, GOLFE, HIPISMO, ESGRIMA, JUDÔ, WRESTLING, HÓQUEI, CRÍQUETE, PADEL, FUTSAL, BEACH TENNIS.\n\nResponda SOMENTE o nome do esporte. Sem explicação. Sem pontuação extra.\n\nTítulo: ${titulo}\nTexto: ${primeiras200}`,
+        }],
+      }),
+    });
+    const data = await res.json();
+    const resposta = data?.content?.[0]?.text?.trim().toUpperCase();
+    if (resposta && CHAPEUS.includes(resposta)) {
+      document.getElementById('edit-chapeu').value = resposta;
+    }
+  } catch(e) {}
 }
 
 async function testarServidor() {
