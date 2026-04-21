@@ -823,7 +823,10 @@ const CHAPEUS = ['FUTEBOL','BASQUETE','VÔLEI','TÊNIS','FÓRMULA 1','NATAÇÃO'
 
 async function classificarChapeu(titulo, texto) {
   const key = localStorage.getItem('anthropic_key');
+  console.log('[Chapéu] Chave Anthropic:', key ? '✅ encontrada' : '❌ não configurada');
   if (!key) return;
+
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> 🤖 Identificando esporte...');
   const primeiras200 = texto.split(/\s+/).slice(0, 200).join(' ');
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -844,11 +847,19 @@ async function classificarChapeu(titulo, texto) {
       }),
     });
     const data = await res.json();
+    console.log('[Chapéu] Resposta da API:', data);
     const resposta = data?.content?.[0]?.text?.trim().toUpperCase();
     if (resposta && CHAPEUS.includes(resposta)) {
       document.getElementById('edit-chapeu').value = resposta;
+      showStatus('s1-status', 'success', `✅ Esporte identificado: ${resposta} 🌸`);
+    } else {
+      console.warn('[Chapéu] Resposta não reconhecida:', resposta);
+      showStatus('s1-status', 'error', '⚠️ Não foi possível identificar o esporte automaticamente.');
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('[Chapéu] Erro completo:', e);
+    showStatus('s1-status', 'error', '⚠️ Não foi possível identificar o esporte automaticamente.');
+  }
 }
 
 async function testarServidor() {
