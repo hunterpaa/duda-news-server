@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tanaka Sports ⚽</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --pink: #c2185b; --pink-dark: #ad1457; --pink-light: #fce4ec;
+  --pink-bg: #fdf4f8; --pink-border: #f8bbd0;
+  --purple: #7b1fa2; --radius: 14px; --radius-sm: 10px;
+  --btn-h: 52px; --input-h: 52px;
+}
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--pink-bg); color: #1a1a1a; min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+.header-bar { background: linear-gradient(135deg, #c2185b 0%, #7b1fa2 100%); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+.logo-circle { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.35); }
+.header-texts h1 { font-size: 20px; font-weight: 700; color: white; letter-spacing: -0.4px; }
+.header-texts p { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+.header-badge { margin-left: auto; background: rgba(255,255,255,0.18); color: white; font-size: 11px; padding: 5px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; white-space: nowrap; }
+.dot-online { width: 7px; height: 7px; border-radius: 50%; background: #69f0ae; flex-shrink: 0; }
+.app { max-width: 600px; margin: 0 auto; padding: 1rem; padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+.tabs { display: flex; gap: 8px; margin-bottom: 1.1rem; }
+.tab { flex: 1; height: 46px; font-size: 15px; cursor: pointer; border: 2px solid #e91e8c; background: white; color: var(--pink); border-radius: 25px; font-family: inherit; font-weight: 600; transition: all 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.tab.active { background: var(--pink); color: white; }
+.steps { display: flex; align-items: center; gap: 4px; margin-bottom: 1.1rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.steps::-webkit-scrollbar { display: none; }
+.step { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #ccc; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+.step.done { color: var(--purple); }
+.step.active { color: var(--pink); font-weight: 700; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.step.done .step-num { background: var(--purple); border-color: var(--purple); color: white; font-size: 9px; }
+.step.active .step-num { background: var(--pink-light); }
+.arrow { color: #ddd; font-size: 12px; flex-shrink: 0; }
+.card { background: white; border: 1.5px solid var(--pink-border); border-radius: var(--radius); padding: 1.1rem; margin-bottom: 1rem; }
+.card-label { font-size: 11px; font-weight: 700; color: #e91e8c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 1rem; color: #1a1a1a; }
+.news-list { display: flex; flex-direction: column; gap: 8px; }
+.news-item { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1.5px solid var(--pink-light); border-radius: var(--radius-sm); background: #fff9fb; }
+.news-text { flex: 1; min-width: 0; }
+.news-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 3px; color: #1a1a1a; word-break: break-word; }
+.news-time { font-size: 11px; color: #aaa; }
+.tag-publicada { font-size: 11px; background: #f3e5f5; color: var(--purple); padding: 4px 8px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: var(--btn-h); padding: 0 20px; border-radius: 25px; border: 2px solid #ddd; background: white; font-size: 15px; cursor: pointer; font-family: inherit; font-weight: 600; color: #555; transition: all 0.12s; text-decoration: none; white-space: nowrap; touch-action: manipulation; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.btn:active { opacity: 0.8; transform: scale(0.97); }
+.btn.primary { background: var(--pink); color: white; border-color: var(--pink); }
+.btn.purple { background: var(--purple); color: white; border-color: var(--purple); }
+.btn.green { background: #2e7d32; color: white; border-color: #2e7d32; }
+.btn.small { height: 40px; padding: 0 14px; font-size: 13px; }
+.btn.full { width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+.btn-row .btn.primary, .btn-row .btn.purple { flex: 1; }
+.field { margin-bottom: 1rem; }
+label { font-size: 13px; color: #888; display: block; margin-bottom: 6px; font-weight: 600; }
+input[type=text], input[type=password], input[type=email], input[type=url] { width: 100%; height: var(--input-h); border: 2px solid var(--pink-border); border-radius: var(--radius-sm); padding: 0 14px; font-size: 16px; font-family: inherit; background: white; color: #1a1a1a; -webkit-appearance: none; appearance: none; transition: border-color 0.15s; }
+input:focus { outline: none; border-color: var(--pink); }
+select { width: 100%; height: var(--input-h); border: 2px solid var(--pink-border); border-radius: var(--radius-sm); padding: 0 14px; font-size: 16px; font-family: inherit; background: white; color: #1a1a1a; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23aaa' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+select:focus { outline: none; border-color: var(--pink); }
+textarea { width: 100%; border: 2px solid var(--pink-border); border-radius: var(--radius-sm); padding: 14px; font-size: 16px; font-family: inherit; line-height: 1.65; resize: vertical; background: white; color: #1a1a1a; min-height: 220px; -webkit-appearance: none; appearance: none; }
+textarea:focus { outline: none; border-color: var(--pink); }
+.char-count { font-size: 12px; color: #ccc; text-align: right; margin-top: 4px; }
+.status { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 500; }
+.status.info { background: #f3e5f5; color: var(--purple); }
+.status.success { background: var(--pink-light); color: var(--pink); }
+.status.error { background: #fdecea; color: #c62828; }
+.status.loading { background: var(--pink-bg); color: var(--pink); }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── GRID FOTOS GOOGLE ── */
+#google-fotos-grid {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+#google-fotos-grid img {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  border-radius: 8px; border: 2px solid transparent;
+  cursor: pointer; transition: border-color .2s, transform .15s;
+}
+#google-fotos-grid img:hover { border-color: #4285f4; transform: scale(1.03); }
+
+/* ── CAMPO LEGENDA / NOME FOTO ── */
+.nome-foto-box {
+  background: #fff8e1;
+  border: 1.5px solid #ffe082;
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-top: 10px;
+}
+.nome-foto-box label {
+  color: #e65100;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: block;
+}
+.nome-foto-box input {
+  border-color: #ffe082;
+  font-size: 15px;
+}
+.nome-foto-box input:focus { border-color: #ffa000; }
+.nome-foto-hint {
+  font-size: 11px;
+  color: #bbb;
+  margin-top: 5px;
+}
+.sugestao-tag {
+  display: inline-block;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe082;
+  border-radius: 20px;
+  font-size: 11px;
+  padding: 2px 8px;
+  font-weight: 600;
+  margin-right: 4px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* ── UPLOAD STATUS ── */
+#foto-upload-status { margin-top: 10px; }
+.preview-box { background: var(--pink-bg); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem; border: 1.5px solid var(--pink-border); }
+.preview-label { font-size: 11px; color: #ccc; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.preview-titulo { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--pink); }
+.preview-texto { font-size: 13px; line-height: 1.6; color: #555; }
+.publish-hint { background: var(--pink-light); border: 1.5px solid #f48fb1; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: var(--pink); line-height: 1.6; margin-bottom: 0.75rem; font-weight: 500; }
+.divider { border: none; border-top: 1.5px dashed var(--pink-border); margin: 1rem 0; }
+.url-mono { font-size: 11px; font-family: monospace; background: var(--pink-bg); padding: 8px 10px; border-radius: 8px; color: #999; word-break: break-all; border: 1px solid var(--pink-border); }
+#buscar-hint { font-size: 12px; color: #ccc; display: block; margin-top: 6px; text-align: center; }
+
+/* ── AVISO URL DIRETA ── */
+.aviso-url { font-size: 12px; color: #e65100; margin-top: 6px; display: none; font-weight: 600; }
+
+@media (min-width: 600px) {
+  .btn-row .btn.primary, .btn-row .btn.purple { flex: none; }
+  .btn.full { width: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="logo-circle">⚽</div>
+  <div class="header-texts">
+    <h1>Tanaka Sports</h1>
+    <p>Redação esportiva da Duda 🌸</p>
+  </div>
+  <div class="header-badge"><div class="dot-online"></div> online</div>
+</div>
+
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('publicar')">✏️ Publicar</button>
+    <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
+  </div>
+
+  <div id="tab-publicar">
+    <div class="steps">
+      <div class="step active" id="ps1"><div class="step-num">1</div> Buscar</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps2"><div class="step-num">2</div> Revisar</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps3"><div class="step-num">3</div> Foto</div>
+      <span class="arrow">›</span>
+      <div class="step" id="ps4"><div class="step-num">4</div> Publicar</div>
+    </div>
+
+    <div class="card" id="step1">
+      <div class="card-label">📰 Passo 1</div>
+      <div class="card-title">Últimas matérias</div>
+      <div class="news-list" id="news-list">
+        <div style="font-size:14px;color:#ccc;padding:16px 0;text-align:center;">Toque em buscar para carregar 🏃‍♀️</div>
+      </div>
+      <div id="s1-status" class="status" style="display:none"></div>
+      <button class="btn primary full" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1rem;">⚡ Buscar matérias</button>
+      <button class="btn full" onclick="window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1', '_blank')" style="margin-top:8px;">🔑 Renovar Cookie</button>
+      <span id="buscar-hint"></span>
+    </div>
+
+    <div class="card" id="step2" style="display:none">
+      <div class="card-label">✍️ Passo 2</div>
+      <div class="card-title">Revisar a matéria</div>
+      <div class="field">
+        <label>Chapéu ⚽ (categoria)</label>
+        <select id="edit-chapeu">
+          <option value="FUTEBOL">FUTEBOL</option>
+          <option value="FUTSAL">FUTSAL</option>
+          <option value="FUTEBOL AMERICANO">FUTEBOL AMERICANO</option>
+          <option value="BASQUETE">BASQUETE</option>
+          <option value="VÔLEI">VÔLEI</option>
+          <option value="VÔLEI DE PRAIA">VÔLEI DE PRAIA</option>
+          <option value="TÊNIS">TÊNIS</option>
+          <option value="TÊNIS DE MESA">TÊNIS DE MESA</option>
+          <option value="BADMINTON">BADMINTON</option>
+          <option value="SQUASH">SQUASH</option>
+          <option value="PADEL">PADEL</option>
+          <option value="BEACH TENNIS">BEACH TENNIS</option>
+          <option value="FÓRMULA 1">FÓRMULA 1</option>
+          <option value="AUTOMOBILISMO">AUTOMOBILISMO</option>
+          <option value="RALI">RALI</option>
+          <option value="MOTOCICLISMO">MOTOCICLISMO</option>
+          <option value="MOTO GP">MOTO GP</option>
+          <option value="NATAÇÃO">NATAÇÃO</option>
+          <option value="NATAÇÃO ARTÍSTICA">NATAÇÃO ARTÍSTICA</option>
+          <option value="MERGULHO">MERGULHO</option>
+          <option value="POLO AQUÁTICO">POLO AQUÁTICO</option>
+          <option value="SURFE">SURFE</option>
+          <option value="REMO">REMO</option>
+          <option value="CANOAGEM">CANOAGEM</option>
+          <option value="VELA">VELA</option>
+          <option value="ATLETISMO">ATLETISMO</option>
+          <option value="MARATONA">MARATONA</option>
+          <option value="CORRIDA DE RUA">CORRIDA DE RUA</option>
+          <option value="CICLISMO">CICLISMO</option>
+          <option value="MOUNTAIN BIKE">MOUNTAIN BIKE</option>
+          <option value="BMX">BMX</option>
+          <option value="GINÁSTICA ARTÍSTICA">GINÁSTICA ARTÍSTICA</option>
+          <option value="GINÁSTICA RÍTMICA">GINÁSTICA RÍTMICA</option>
+          <option value="GINÁSTICA ACROBÁTICA">GINÁSTICA ACROBÁTICA</option>
+          <option value="TRAMPOLIM">TRAMPOLIM</option>
+          <option value="SKATE">SKATE</option>
+          <option value="SNOWBOARD">SNOWBOARD</option>
+          <option value="SKI">SKI</option>
+          <option value="PATINAÇÃO">PATINAÇÃO</option>
+          <option value="HÓQUEI NO GELO">HÓQUEI NO GELO</option>
+          <option value="HÓQUEI NA GRAMA">HÓQUEI NA GRAMA</option>
+          <option value="RUGBY">RUGBY</option>
+          <option value="HANDEBOL">HANDEBOL</option>
+          <option value="BEISEBOL">BEISEBOL</option>
+          <option value="SOFTBOL">SOFTBOL</option>
+          <option value="CRÍQUETE">CRÍQUETE</option>
+          <option value="GOLFE">GOLFE</option>
+          <option value="HIPISMO">HIPISMO</option>
+          <option value="PENTATLO MODERNO">PENTATLO MODERNO</option>
+          <option value="TRIATLO">TRIATLO</option>
+          <option value="IRONMAN">IRONMAN</option>
+          <option value="MMA">MMA</option>
+          <option value="UFC">UFC</option>
+          <option value="BOXE">BOXE</option>
+          <option value="KICKBOXING">KICKBOXING</option>
+          <option value="MUAY THAI">MUAY THAI</option>
+          <option value="JUDÔ">JUDÔ</option>
+          <option value="KARATÊ">KARATÊ</option>
+          <option value="TAEKWONDO">TAEKWONDO</option>
+          <option value="WRESTLING">WRESTLING</option>
+          <option value="LUTA OLÍMPICA">LUTA OLÍMPICA</option>
+          <option value="ESGRIMA">ESGRIMA</option>
+          <option value="TIRO ESPORTIVO">TIRO ESPORTIVO</option>
+          <option value="TIRO COM ARCO">TIRO COM ARCO</option>
+          <option value="LEVANTAMENTO DE PESO">LEVANTAMENTO DE PESO</option>
+          <option value="HALTEROFILISMO">HALTEROFILISMO</option>
+          <option value="CROSSFIT">CROSSFIT</option>
+          <option value="ESCALADA">ESCALADA</option>
+          <option value="PARAOLIMPÍADAS">PARAOLIMPÍADAS</option>
+          <option value="ESPORTS">ESPORTS</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Título 📝</label>
+        <input type="text" id="edit-titulo" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Texto completo 📄</label>
+        <textarea id="edit-texto" rows="10" oninput="updateCount()"></textarea>
+        <div class="char-count" id="char-count">0 caracteres</div>
+      </div>
+      <div id="s2-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="goStep3()">Próximo: foto 📸 →</button>
+        <button class="btn" onclick="goStep1()">← Voltar</button>
+      </div>
+    </div>
+
+    <div class="card" id="step3" style="display:none">
+      <div class="card-label">🖼️ Passo 3</div>
+      <div class="card-title">Foto da matéria</div>
+
+      <div style="background:#e8f0fe;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
+        <p style="font-size:14px;color:#333;margin-bottom:10px;line-height:1.5;">
+          Abre o Google Imagens com a busca pronta e carrega as fotos HD automaticamente aqui.
+        </p>
+        <button id="btn-google-fotos" onclick="abrirGoogleImagens()" class="btn full" style="background:#4285f4;color:white;border-color:#4285f4;">🔍 Abrir Google Imagens</button>
+        <div id="google-fotos-grid"></div>
+      </div>
+
+      <div style="background:#f0f7ff;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
+        <label style="color:#555;margin-bottom:8px;">📎 Cole o link DIRETO da imagem aqui:</label>
+        <input type="url" id="foto-url"
+          placeholder="https://...foto.jpg (deve terminar em .jpg, .png, .webp)"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          oninput="previewFotoUrl()" />
+        <div class="aviso-url" id="aviso-url">
+          ⚠️ Isso parece a URL de uma página, não de uma imagem. Copie o link DIRETO da foto (toque e segure → "Copiar link da imagem").
+        </div>
+        <div id="foto-preview-manual" style="display:none;margin-top:10px;">
+          <img id="foto-img-manual" src="" alt="preview" referrerpolicy="no-referrer"
+            style="max-width:100%;max-height:200px;border-radius:8px;border:2px solid #b3d4f5;display:block;" />
+        </div>
+      </div>
+
+      <div class="nome-foto-box">
+        <label>🏷️ Nome da foto no Diário de Cuiabá:</label>
+        <input type="text" id="foto-nome"
+          placeholder="Ex: gremio inter"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <div style="margin-top:6px;">
+          <span style="font-size:11px;color:#bbb;">Sugestão: </span>
+          <span class="sugestao-tag" id="sugestao-nome" onclick="usarSugestao()">—</span>
+        </div>
+        <div class="nome-foto-hint">Esse nome aparece no Diário de Cuiabá. Toque na sugestão para usar, ou escreva o que quiser.</div>
+      </div>
+
+      <div id="foto-upload-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>📤 Enviar foto →</button>
+        <button class="btn" onclick="goStep2()">← Voltar</button>
+      </div>
+    </div>
+
+    <div class="card" id="step4" style="display:none">
+      <div class="card-label">🚀 Passo 4</div>
+      <div class="card-title">Publicar no Diário de Cuiabá</div>
+      <div class="preview-box">
+        <div class="preview-label">Título</div>
+        <div class="preview-titulo" id="conf-titulo">—</div>
+        <div class="preview-label">Prévia</div>
+        <div class="preview-texto" id="conf-preview">—</div>
+      </div>
+      <div class="publish-hint">✅ Texto copiado! No Diário de Cuiabá: cole o título, cole o texto, selecione a foto e publique! 🎉</div>
+      <div id="s4-status" class="status" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir Diário de Cuiabá</button>
+        <button class="btn" onclick="goStep3()">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-config" style="display:none">
+    <div class="card">
+      <div class="card-label">⚙️ Configurações</div>
+      <div class="card-title">Acesso ao Diário de Cuiabá</div>
+      <div class="field"><label>E-mail 📧</label><input type="email" id="cfg-user" placeholder="duda@diariodecuiaba.com.br" autocomplete="email" /></div>
+      <div class="field"><label>Senha 🔑</label><input type="password" id="cfg-pass" placeholder="••••••••" autocomplete="current-password" /></div>
+      <div class="divider"></div>
+      <div class="field"><label>Chave Anthropic 🤖 (chapéu automático)</label><input type="password" id="cfg-anthropic" placeholder="sk-ant-..." autocomplete="off" /></div>
+      <div class="divider"></div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:4px;font-weight:600;">Servidor</div>
+      <div class="url-mono">https://duda-news-server.onrender.com</div>
+      <div class="btn-row" style="margin-top:1rem;">
+        <button class="btn primary" onclick="salvarConfig()">💾 Salvar</button>
+        <button class="btn" onclick="testarServidor()">🔌 Testar</button>
+        <button class="btn purple" onclick="window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1', '_blank')">🔑 Renovar Cookie</button>
+      </div>
+      <div id="cfg-status" class="status" style="display:none;margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SERVER = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://duda-news-server.onrender.com';
+const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
+
+window.onload = () => {
+  document.getElementById('cfg-user').value = localStorage.getItem('duda_user') || '';
+  document.getElementById('cfg-pass').value = localStorage.getItem('duda_pass') || '';
+  document.getElementById('cfg-anthropic').value = localStorage.getItem('anthropic_key') || '';
+};
+
+function switchTab(t) {
+  document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
+  document.getElementById('tab-config').style.display = t === 'config' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', (t==='publicar'&&i===0)||(t==='config'&&i===1))
+  );
+}
+
+function setProgress(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('ps' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    el.querySelector('.step-num').textContent = i < n ? '✓' : i;
+  }
+}
+
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.className = 'status ' + type;
+  el.innerHTML = msg;
+}
+function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
+
+function scrollToCard(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+}
+
+async function buscarMaterias() {
+  const btn = document.getElementById('btn-buscar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Buscando...';
+  document.getElementById('buscar-hint').textContent = 'Pode demorar até 30s na primeira vez...';
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> Buscando matérias...');
+  document.getElementById('news-list').innerHTML = '';
+  try {
+    const res = await fetch(`${SERVER}/materias`);
+    const data = await res.json();
+    hideStatus('s1-status');
+    document.getElementById('buscar-hint').textContent = '';
+    if (!data.ok || !data.materias?.length) {
+      showStatus('s1-status', 'error', '❌ ' + (data.erro || 'Nenhuma matéria encontrada.'));
+    } else {
+      renderMaterias(data.materias);
+      showStatus('s1-status', 'success', `🎉 ${data.total} matérias encontradas!`);
+    }
+  } catch(e) {
+    showStatus('s1-status', 'error', '❌ Erro ao conectar. Aguarde 30s e tente de novo.');
+    document.getElementById('buscar-hint').textContent = '';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Buscar matérias';
+}
+
+function getPublicadas() {
+  try { return JSON.parse(localStorage.getItem('tanaka_publicadas') || '[]'); } catch(e) { return []; }
+}
+function marcarPublicada(link) {
+  const lista = getPublicadas();
+  if (!lista.includes(link)) { lista.push(link); localStorage.setItem('tanaka_publicadas', JSON.stringify(lista)); }
+}
+
+function renderMaterias(lista) {
+  const div = document.getElementById('news-list');
+  div.innerHTML = '';
+  const publicadas = getPublicadas();
+  lista.forEach(m => {
+    const jaPublicada = publicadas.includes(m.link);
+    const item = document.createElement('div');
+    item.className = 'news-item';
+    const textDiv = document.createElement('div');
+    textDiv.className = 'news-text';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'news-title';
+    titleEl.textContent = m.titulo;
+    const timeEl = document.createElement('div');
+    timeEl.className = 'news-time';
+    timeEl.textContent = (m.tempo || '') + (m.autor ? ' · ' + m.autor : '');
+    textDiv.appendChild(titleEl);
+    textDiv.appendChild(timeEl);
+    item.appendChild(textDiv);
+    if (jaPublicada) {
+      const tag = document.createElement('span');
+      tag.className = 'tag-publicada';
+      tag.textContent = '✓ Publicada';
+      item.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary small';
+      btn.textContent = 'Usar →';
+      btn.addEventListener('click', () => carregarMateria(m.link, m.titulo, m.autor));
+      item.appendChild(btn);
+    }
+    div.appendChild(item);
+  });
+}
+
+async function carregarMateria(link, titulo, autorBruto) {
+  const autorLimpo = (autorBruto && !autorBruto.toLowerCase().includes('estadão') && !autorBruto.toLowerCase().includes('estadao')) ? autorBruto : '';
+  const autor = autorLimpo || 'Maria Eduarda';
+  document.getElementById('edit-titulo')._autor = autor;
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> Carregando texto completo...');
+  document.getElementById('edit-titulo').value = titulo;
+  document.getElementById('edit-texto').value = '';
+  try {
+    const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(link)}`);
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('edit-titulo').value = data.titulo || titulo;
+      document.getElementById('edit-titulo')._link = link;
+      document.getElementById('edit-texto').value = data.texto || '';
+      if (data.autor) document.getElementById('edit-titulo')._autor = data.autor;
+      updateCount();
+      const autorMsg = data.autor ? ` · Autor: ${data.autor}` : '';
+      showStatus('s1-status', 'success', `✅ Matéria carregada!${autorMsg} Revise e siga em frente 🌸`);
+      classificarChapeu(data.titulo || titulo, data.texto || '');
+    } else {
+      showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
+    }
+  } catch(e) {
+    showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole manualmente.');
+  }
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(2);
+  scrollToCard('step2');
+}
+
+function goStep1() {
+  ['step2','step3','step4'].forEach(id => document.getElementById(id).style.display = 'none');
+  hideStatus('s1-status');
+  setProgress(1);
+  scrollToCard('step1');
+}
+
+function goStep2() {
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(2);
+  scrollToCard('step2');
+}
+
+async function goStep3() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  if (!titulo || !texto) {
+    showStatus('s2-status', 'error', '❌ Preencha o título e o texto antes de continuar!');
+    return;
+  }
+  hideStatus('s2-status');
+
+  document.getElementById('foto-url').value = '';
+  document.getElementById('foto-preview-manual').style.display = 'none';
+  document.getElementById('aviso-url').style.display = 'none';
+  document.getElementById('btn-confirmar-foto').disabled = true;
+  hideStatus('foto-upload-status');
+
+  const sugestao = gerarNomeCurto(titulo);
+  document.getElementById('sugestao-nome').textContent = sugestao;
+  document.getElementById('foto-nome').value = sugestao;
+
+  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&udm=2`;
+
+  document.getElementById('step3').style.display = 'block';
+  document.getElementById('step4').style.display = 'none';
+  setProgress(3);
+  scrollToCard('step3');
+}
+
+function gerarNomeCurto(titulo) {
+  const stop = new Set([
+    'de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem',
+    'que','se','o','a','os','as','um','uma','ao','e','ou','mas','mais','como',
+    'foi','é','são','vai','tem','já','após','até','sobre','pelo','pela',
+    'vence','venceu','bate','perde','empata','marca','sofre','leva','ganha',
+    'joga','jogou','estreia','retorna','volta','sai','entra','assina',
+    'divulga','afirma','anuncia','confirma','declara','revela','diz','fala',
+    'novo','nova','boa','bom','grande','quando','onde','quem','seu','sua',
+  ]);
+  const palavras = titulo
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(p => p.length > 2 && !stop.has(p.toLowerCase()));
+
+  const proprias = palavras.filter(p => /^[A-Z]/.test(p));
+  const demais = palavras.filter(p => /^[a-z]/.test(p));
+
+  const escolhidas = [...new Set([...proprias, ...demais])].slice(0, 3);
+  return escolhidas.map(p => p.toLowerCase()).join(' ') || 'foto esporte';
+}
+
+function usarSugestao() {
+  const sug = document.getElementById('sugestao-nome').textContent;
+  if (sug && sug !== '—') {
+    document.getElementById('foto-nome').value = sug;
+    document.getElementById('foto-nome').focus();
+  }
+}
+
+function extrairPalavrasChaveSync(titulo) {
+  const stopWords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','por','para',
+    'com','sem','que','se','o','a','os','as','um','uma','e','ou','mas','mais','foi','é','são',
+    'vence','venceu','bate','perde','empata','marca','sofre','leva','ganha','após','ante',
+    'pelo','pela','pelos','pelas','está','vai','tem','sua','seu']);
+  const palavras = titulo.replace(/[^\wÀ-ÿ\s]/g,' ').split(/\s+/)
+    .filter(p => p.length > 2 && !stopWords.has(p.toLowerCase()));
+  const proprias = palavras.filter(p => /^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
+  const demais = palavras.filter(p => !/^[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(p));
+  return [...new Set([...proprias, ...demais])].slice(0, 5).join(' ');
+}
+
+function isUrlDiretaImagem(url) {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.toLowerCase();
+    if (/\.(jpg|jpeg|png|webp|gif|bmp|avif)(\?.*)?$/.test(path)) return true;
+    if (u.hostname.includes('googleusercontent') || u.hostname.includes('gstatic') ||
+        u.hostname.includes('twimg') || u.hostname.includes('fbcdn') ||
+        u.hostname.includes('media') || u.hostname.includes('img') ||
+        u.hostname.includes('images') || u.hostname.includes('foto') ||
+        u.hostname.includes('photo') || u.hostname.includes('cdn')) return true;
+    return false;
+  } catch(e) { return false; }
+}
+
+function pareceUrlDePagina(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('google.com') || u.hostname.includes('google.com.br')) return true;
+    if (u.hostname.includes('instagram.com') || u.hostname.includes('facebook.com')) return true;
+    if (u.hostname.includes('twitter.com') || u.hostname.includes('x.com')) return true;
+    const path = u.pathname.toLowerCase();
+    if (/\.(html|htm|php|asp|aspx)(\?.*)?$/.test(path)) return true;
+    return false;
+  } catch(e) { return false; }
+}
+
+function selecionarFotoDoGrid(url) {
+  document.getElementById('foto-url').value = url;
+  document.getElementById('aviso-url').style.display = 'none';
+  document.getElementById('btn-confirmar-foto').disabled = false;
+  const preview = document.getElementById('foto-preview-manual');
+  const img = document.getElementById('foto-img-manual');
+  img.src = url;
+  img.style.display = 'block';
+  preview.style.display = 'block';
+}
+
+function previewFotoUrl() {
+  const url = document.getElementById('foto-url').value.trim();
+  const btn = document.getElementById('btn-confirmar-foto');
+  const aviso = document.getElementById('aviso-url');
+  const preview = document.getElementById('foto-preview-manual');
+  const img = document.getElementById('foto-img-manual');
+
+  aviso.style.color = "#e65100";
+  img.style.display = 'block';
+
+  if (!url) {
+    preview.style.display = 'none';
+    aviso.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  if (url.startsWith('data:image')) {
+    aviso.innerHTML = "⚠️ Você copiou a miniatura. Clique na foto no Google para carregar e só depois copie o link!";
+    aviso.style.display = 'block';
+    preview.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  if (!url.startsWith('http')) {
+    preview.style.display = 'none';
+    aviso.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  if (pareceUrlDePagina(url)) {
+    aviso.innerHTML = "⚠️ Isso parece o link de uma página. Copie o link DIRETO da foto.";
+    aviso.style.display = 'block';
+    preview.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  aviso.style.display = 'none';
+  preview.style.display = 'block';
+  img.src = url;
+
+  img.onload = () => {
+    btn.disabled = false;
+  };
+
+  img.onerror = () => {
+    img.style.display = 'none';
+    aviso.innerHTML = "👀 <i>A prévia foi bloqueada pelo site, mas o link é válido. Pode clicar em Enviar!</i>";
+    aviso.style.color = "#888";
+    aviso.style.display = 'block';
+    if (url.length > 10) btn.disabled = false;
+  };
+}
+
+async function confirmarFotoManual() {
+  const url = document.getElementById('foto-url').value.trim();
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
+
+  if (!url) {
+    showStatus('foto-upload-status', 'error', '❌ Cole o link da foto primeiro!');
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirmar-foto');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Enviando...';
+  showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o Diário de Cuiabá...');
+
+  try {
+    const res = await fetch(`${SERVER}/upload-foto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      fetch(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
+      showStatus('foto-upload-status', 'success', '✅ Foto enviada! 🌸');
+      btn.innerHTML = '✅ Enviada!';
+      setTimeout(() => goStep4(), 900);
+    } else {
+      showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar'));
+      btn.disabled = false;
+      btn.innerHTML = '📤 Enviar foto →';
+    }
+  } catch(e) {
+    showStatus('foto-upload-status', 'error', '❌ Erro de conexão. Tente de novo.');
+    btn.disabled = false;
+    btn.innerHTML = '📤 Enviar foto →';
+  }
+}
+
+function goStep4() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  document.getElementById('conf-titulo').textContent = titulo;
+  document.getElementById('conf-preview').textContent = texto.substring(0, 300) + (texto.length > 300 ? '...' : '');
+  navigator.clipboard.writeText(`TÍTULO:\n${titulo}\n\nTEXTO:\n${texto}`).catch(() => {});
+  document.getElementById('step4').style.display = 'block';
+  setProgress(4);
+  scrollToCard('step4');
+}
+
+async function copiarEAbrir() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  const texto = document.getElementById('edit-texto').value.trim();
+  const chapeu = document.getElementById('edit-chapeu').value;
+  const fotoNome = document.getElementById('foto-nome').value.trim();
+
+  try {
+    await navigator.clipboard.writeText(titulo + '\n\n' + texto);
+  } catch(e) {}
+
+  const autor = document.getElementById('edit-titulo')._autor || 'Maria Eduarda';
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, autor });
+  const dados = btoa(unescape(encodeURIComponent(json)));
+  const url = NEXTSITE + '&tanaka=' + dados;
+
+  const linkAtual = document.getElementById('edit-titulo')._link || '';
+  if (linkAtual) marcarPublicada(linkAtual);
+
+  showStatus('s4-status', 'success', '🎉 Abrindo Diário de Cuiabá...');
+  setTimeout(() => window.open(url, '_blank'), 400);
+
+  const btn = document.getElementById('btn-publicar');
+  btn.textContent = '✅ Abrindo!';
+  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir Diário de Cuiabá'; }, 3000);
+}
+
+let abaGoogle = null;
+
+function abrirGoogleImagens() {
+  const url = window._googleFotosUrl || 'https://www.google.com/search?q=futebol&udm=2';
+  const grid = document.getElementById('google-fotos-grid');
+  grid.style.display = 'none';
+  grid.innerHTML = '';
+
+  // Loading no botão
+  const btn = document.getElementById('btn-google-fotos');
+  const textoOriginal = btn.textContent;
+  btn.textContent = '⏳ Buscando fotos...';
+  btn.disabled = true;
+
+  // Loading no grid
+  grid.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:16px 0;grid-column:1/-1;">⏳ Aguardando fotos do Google...</p>';
+  grid.style.display = 'block';
+
+  function restaurarBtn() {
+    btn.textContent = textoOriginal;
+    btn.disabled = false;
+  }
+
+  abaGoogle = window.open(url, '_blank');
+
+  // Polling no servidor como fallback (caso window.opener seja null no Google)
+  let tentativas = 0;
+  const poll = setInterval(async () => {
+    tentativas++;
+    if (tentativas > 30) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; } // para após 30s
+    if (grid.querySelector('img')) { clearInterval(poll); return; } // já recebeu por postMessage
+    try {
+      const res = await fetch(`${SERVER}/google-imagens`);
+      const data = await res.json();
+      if (data.urls && data.urls.length > 0) {
+        clearInterval(poll);
+        exibirGridFotos(data.urls);
+        restaurarBtn();
+      }
+    } catch(e) {}
+  }, 1000);
+}
+
+function exibirGridFotos(urls) {
+  const grid = document.getElementById('google-fotos-grid');
+  grid.innerHTML = '';
+  // Restaura o botão caso tenha sido desabilitado
+  const btn = document.getElementById('btn-google-fotos');
+  if (btn) { btn.textContent = '🔍 Abrir Google Imagens'; btn.disabled = false; }
+
+  // Fila de reserva: começa com tudo, os 6 primeiros vão para o grid
+  const fila = [...urls];
+
+  function tentarUrl(img, url) {
+    img.src = url;
+    img.onclick = () => {
+      selecionarFotoDoGrid(img.src);
+      grid.style.display = 'none';
+    };
+    img.onerror = () => {
+      if (fila.length > 0) {
+        tentarUrl(img, fila.shift()); // tenta próxima da fila
+      } else {
+        img.remove(); // sem reserva, remove o slot
+        if (grid.children.length === 0) grid.style.display = 'none';
+      }
+    };
+  }
+
+  const iniciais = fila.splice(0, 6);
+  iniciais.forEach(url => {
+    const img = document.createElement('img');
+    img.referrerPolicy = 'no-referrer';
+    img.title = 'Clique para usar esta foto';
+    tentarUrl(img, url);
+    grid.appendChild(img);
+  });
+
+  if (iniciais.length > 0) {
+    grid.style.display = 'grid';
+  }
+}
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'IMAGENS_GOOGLE') return;
+  exibirGridFotos(e.data.data || []);
+});
+
+function updateCount() {
+  document.getElementById('char-count').textContent =
+    document.getElementById('edit-texto').value.length.toLocaleString('pt-BR') + ' caracteres';
+}
+
+function salvarConfig() {
+  localStorage.setItem('duda_user', document.getElementById('cfg-user').value.trim());
+  localStorage.setItem('duda_pass', document.getElementById('cfg-pass').value);
+  const key = document.getElementById('cfg-anthropic').value.trim();
+  if (key) localStorage.setItem('anthropic_key', key);
+  showStatus('cfg-status', 'success', '💾 Salvo com sucesso!');
+  setTimeout(() => hideStatus('cfg-status'), 2000);
+}
+
+const CHAPEUS = ['FUTEBOL','FUTSAL','FUTEBOL AMERICANO','BASQUETE','VÔLEI','VÔLEI DE PRAIA','TÊNIS','TÊNIS DE MESA','BADMINTON','SQUASH','PADEL','BEACH TENNIS','FÓRMULA 1','AUTOMOBILISMO','RALI','MOTOCICLISMO','MOTO GP','NATAÇÃO','NATAÇÃO ARTÍSTICA','MERGULHO','POLO AQUÁTICO','SURFE','REMO','CANOAGEM','VELA','ATLETISMO','MARATONA','CORRIDA DE RUA','CICLISMO','MOUNTAIN BIKE','BMX','GINÁSTICA ARTÍSTICA','GINÁSTICA RÍTMICA','GINÁSTICA ACROBÁTICA','TRAMPOLIM','SKATE','SNOWBOARD','SKI','PATINAÇÃO','HÓQUEI NO GELO','HÓQUEI NA GRAMA','RUGBY','HANDEBOL','BEISEBOL','SOFTBOL','CRÍQUETE','GOLFE','HIPISMO','PENTATLO MODERNO','TRIATLO','IRONMAN','MMA','UFC','BOXE','KICKBOXING','MUAY THAI','JUDÔ','KARATÊ','TAEKWONDO','WRESTLING','LUTA OLÍMPICA','ESGRIMA','TIRO ESPORTIVO','TIRO COM ARCO','LEVANTAMENTO DE PESO','HALTEROFILISMO','CROSSFIT','ESCALADA','PARAOLIMPÍADAS','ESPORTS'];
+
+async function classificarChapeu(titulo, texto) {
+  const key = localStorage.getItem('anthropic_key');
+  console.log('[Chapéu] Chave Anthropic:', key ? '✅ encontrada' : '❌ não configurada');
+  if (!key) return;
+
+  showStatus('s1-status', 'loading', '<span class="spinner"></span> 🤖 Identificando esporte...');
+  const primeiras200 = texto.split(/\s+/).slice(0, 200).join(' ');
+  try {
+    const res = await fetch(`${SERVER}/classificar-chapeu`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, texto: primeiras200, apiKey: key }),
+    });
+    const data = await res.json();
+    console.log('[Chapéu] Resposta:', data);
+    const resposta = data?.chapeu?.trim().toUpperCase();
+    if (resposta && CHAPEUS.includes(resposta)) {
+      document.getElementById('edit-chapeu').value = resposta;
+      showStatus('s1-status', 'success', `✅ Esporte identificado: ${resposta} 🌸`);
+    } else {
+      console.warn('[Chapéu] Resposta não reconhecida:', resposta);
+      showStatus('s1-status', 'error', '⚠️ Não foi possível identificar o esporte automaticamente.');
+    }
+  } catch(e) {
+    console.error('[Chapéu] Erro completo:', e);
+    showStatus('s1-status', 'error', '⚠️ Não foi possível identificar o esporte automaticamente.');
+  }
+}
+
+async function testarServidor() {
+  showStatus('cfg-status', 'loading', '<span class="spinner"></span> Testando conexão...');
+  try {
+    const res = await fetch(`${SERVER}/`);
+    const data = await res.json();
+    showStatus('cfg-status', 'success', '🟢 ' + data.message);
+  } catch(e) {
+    showStatus('cfg-status', 'error', '🔴 Servidor offline. Aguarde 30s e tente de novo.');
+  }
+}
+</script>
+</body>
+</html>
