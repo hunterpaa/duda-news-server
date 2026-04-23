@@ -70,6 +70,32 @@ textarea:focus { outline: none; border-color: var(--pink); }
 .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── MODAL COOKIE ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: white;
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border-top: 4px solid var(--pink);
+}
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: #1a1a1a; }
+.modal-desc { font-size: 13px; color: #888; margin-bottom: 1rem; line-height: 1.6; }
+.modal-box input { margin-bottom: 10px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 4px; }
+.modal-btns .btn { flex: 1; }
+
 /* ── GRID FOTOS GOOGLE ── */
 #google-fotos-grid {
   display: none;
@@ -83,6 +109,11 @@ textarea:focus { outline: none; border-color: var(--pink); }
   cursor: pointer; transition: border-color .2s, transform .15s;
 }
 #google-fotos-grid img:hover { border-color: #4285f4; transform: scale(1.03); }
+#google-fotos-grid img.ia-selecionada {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px #22c55e44;
+  transform: scale(1.03);
+}
 
 /* ── CAMPO LEGENDA / NOME FOTO ── */
 .nome-foto-box {
@@ -317,6 +348,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
       </div>
 
       <div id="foto-upload-status" class="status" style="display:none"></div>
+      <button id="btn-renovar-cookie-step3" class="btn small full" style="display:none;margin-top:8px;" onclick="window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1','_blank')">🔑 Renovar Cookie e tentar de novo</button>
       <div class="btn-row">
         <button class="btn primary" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>📤 Enviar foto →</button>
         <button class="btn" onclick="goStep2()">← Voltar</button>
@@ -364,7 +396,7 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
 <script>
 const SERVER = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
+  ? 'http://localhost:3003'
   : 'https://duda-news-server.onrender.com';
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
 
@@ -535,6 +567,11 @@ async function goStep3() {
   document.getElementById('btn-confirmar-foto').disabled = true;
   hideStatus('foto-upload-status');
 
+  // Limpa fotos da matéria anterior
+  const gridAnterior = document.getElementById('google-fotos-grid');
+  gridAnterior.innerHTML = '';
+  gridAnterior.style.display = 'none';
+
   const sugestao = gerarNomeCurto(titulo);
   document.getElementById('sugestao-nome').textContent = sugestao;
   document.getElementById('foto-nome').value = sugestao;
@@ -616,7 +653,21 @@ function pareceUrlDePagina(url) {
   } catch(e) { return false; }
 }
 
+// ── Seleção automática de foto ──
+let _aiCancelada = false;
+let _countdownTimer = null;
+let _candidatas = [];
+
+function cancelarContagem() {
+  _aiCancelada = true;
+  if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+  hideStatus('foto-upload-status');
+  // Remove destaque IA de todas as fotos do grid
+  document.querySelectorAll('#google-fotos-grid img.ia-selecionada').forEach(el => el.classList.remove('ia-selecionada'));
+}
+
 function selecionarFotoDoGrid(url) {
+  cancelarContagem(); // clique manual cancela IA
   document.getElementById('foto-url').value = url;
   document.getElementById('aviso-url').style.display = 'none';
   document.getElementById('btn-confirmar-foto').disabled = false;
@@ -625,6 +676,77 @@ function selecionarFotoDoGrid(url) {
   img.src = url;
   img.style.display = 'block';
   preview.style.display = 'block';
+}
+
+async function iniciarSelecaoAutomatica(urls) {
+  const apiKey = localStorage.getItem('anthropic_key') || '';
+  if (!apiKey) return; // sem chave = sem automação
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  if (!titulo) return;
+
+  _candidatas = [...urls]; // congela a lista para fallback de upload
+  _aiCancelada = false;
+
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch(`${SERVER}/escolher-foto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls, titulo, apiKey }),
+      signal: ctrl.signal,
+    });
+    const data = await res.json();
+
+    if (_aiCancelada) return; // usuária clicou antes da IA responder
+    if (!data.ok || typeof data.index !== 'number') return;
+
+    // Atualiza candidatas com a lista filtrada que o servidor usou
+    if (data.candidatas?.length) _candidatas = [...data.candidatas, ...urls.filter(u => !data.candidatas.includes(u))];
+
+    // Destaca a foto escolhida no grid
+    const grid = document.getElementById('google-fotos-grid');
+    const imgs = grid.querySelectorAll('img');
+    let imgDestacada = null;
+    imgs.forEach(img => {
+      if (img.src === data.url || img.src === data.candidatas?.[data.index]) {
+        img.classList.add('ia-selecionada');
+        imgDestacada = img;
+      }
+    });
+
+    // Preenche os campos como se o usuário tivesse clicado, mas SEM cancelar a contagem
+    document.getElementById('foto-url').value = data.url;
+    document.getElementById('aviso-url').style.display = 'none';
+    document.getElementById('btn-confirmar-foto').disabled = false;
+    const imgPreview = document.getElementById('foto-img-manual');
+    imgPreview.src = data.url;
+    imgPreview.style.display = 'block';
+    document.getElementById('foto-preview-manual').style.display = 'block';
+    if (data.legenda) document.getElementById('foto-nome').value = data.legenda;
+
+    // Scroll para a foto destacada
+    if (imgDestacada) imgDestacada.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Contagem regressiva de 3s antes de enviar automaticamente
+    let seg = 3;
+    showStatus('foto-upload-status', 'info',
+      `🤖 Claude selecionou esta foto. Enviando em <strong id="ia-conta">${seg}</strong>s… <span style="font-size:12px;color:#aaa;">(toque em outra foto para cancelar)</span>`);
+
+    _countdownTimer = setInterval(() => {
+      seg--;
+      const el = document.getElementById('ia-conta');
+      if (el) el.textContent = seg;
+      if (seg <= 0) {
+        clearInterval(_countdownTimer);
+        _countdownTimer = null;
+        if (!_aiCancelada) confirmarFotoManual();
+      }
+    }, 1000);
+
+  } catch (e) {
+    // Falhou silenciosamente — grid já está disponível para seleção manual
+  }
 }
 
 function previewFotoUrl() {
@@ -684,10 +806,13 @@ function previewFotoUrl() {
   };
 }
 
-async function confirmarFotoManual() {
-  const url = document.getElementById('foto-url').value.trim();
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
+async function confirmarFotoManual(retry) {
+  // retry: objeto { url, titulo, nomeFoto } passado após renovar o cookie
+  const url     = retry?.url     || document.getElementById('foto-url').value.trim();
+  const titulo  = retry?.titulo  || document.getElementById('edit-titulo').value.trim();
+  const nomeFoto = retry?.nomeFoto || document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
+
+  document.getElementById('btn-renovar-cookie-step3').style.display = 'none';
 
   if (!url) {
     showStatus('foto-upload-status', 'error', '❌ Cole o link da foto primeiro!');
@@ -703,14 +828,20 @@ async function confirmarFotoManual() {
     const res = await fetch(`${SERVER}/upload-foto`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto })
+      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto, apiKey: localStorage.getItem('anthropic_key') || '' })
     });
     const data = await res.json();
     if (data.ok) {
       fetch(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
+      if (data.legendaFinal) document.getElementById('foto-nome').value = data.legendaFinal;
       showStatus('foto-upload-status', 'success', '✅ Foto enviada! 🌸');
       btn.innerHTML = '✅ Enviada!';
       setTimeout(() => goStep4(), 900);
+    } else if (res.status === 401 || (data.erro && data.erro.toLowerCase().includes('cookie'))) {
+      showStatus('foto-upload-status', 'error', '🔑 Cookie expirado! Toque em Renovar Cookie abaixo, aguarde a janela fechar e tente enviar a foto de novo.');
+      document.getElementById('btn-renovar-cookie-step3').style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '📤 Enviar foto →';
     } else {
       showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar'));
       btn.disabled = false;
@@ -783,47 +914,68 @@ function abrirGoogleImagens() {
     btn.disabled = false;
   }
 
+  // Drena qualquer cache antigo do servidor antes de abrir o Google
+  // (evita que fotos da matéria anterior apareçam na nova busca)
+  const RENDER = 'https://duda-news-server.onrender.com';
+  const drainCtrl = new AbortController();
+  setTimeout(() => drainCtrl.abort(), 2000);
+  fetch(`${SERVER}/google-imagens`, { signal: drainCtrl.signal }).catch(() => {});
+  if (SERVER.includes('localhost')) {
+    const drainCtrl2 = new AbortController();
+    setTimeout(() => drainCtrl2.abort(), 2000);
+    fetch(`${RENDER}/google-imagens`, { signal: drainCtrl2.signal }).catch(() => {});
+  }
+
   abaGoogle = window.open(url, '_blank');
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
+  // Começa com 1 tick de delay extra para o drain terminar antes de buscar
+  const fetchImagens = (ep) => {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), 2500);
+    return fetch(`${ep}/google-imagens`, { signal: ctrl.signal })
+      .then(r => r.json())
+      .catch(() => ({ urls: [] }))
+      .finally(() => clearTimeout(id));
+  };
   let tentativas = 0;
   const poll = setInterval(async () => {
     tentativas++;
-    if (tentativas > 30) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; } // para após 30s
-    if (grid.querySelector('img')) { clearInterval(poll); return; } // já recebeu por postMessage
-    try {
-      const res = await fetch(`${SERVER}/google-imagens`);
-      const data = await res.json();
-      if (data.urls && data.urls.length > 0) {
-        clearInterval(poll);
-        exibirGridFotos(data.urls);
-        restaurarBtn();
-      }
-    } catch(e) {}
-  }, 1000);
+    if (tentativas > 40) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; }
+    if (grid.querySelector('img')) { clearInterval(poll); return; }
+    const isLocal = SERVER.includes('localhost');
+    const [resLocal, resRender] = await Promise.all([
+      fetchImagens(SERVER),
+      isLocal ? fetchImagens(RENDER) : Promise.resolve({ urls: [] }),
+    ]);
+    const urls = resLocal.urls?.length ? resLocal.urls : (resRender.urls || []);
+    if (urls.length > 0) {
+      clearInterval(poll);
+      exibirGridFotos(urls);
+      restaurarBtn();
+    }
+  }, 1500);
 }
 
 function exibirGridFotos(urls) {
   const grid = document.getElementById('google-fotos-grid');
   grid.innerHTML = '';
-  // Restaura o botão caso tenha sido desabilitado
   const btn = document.getElementById('btn-google-fotos');
   if (btn) { btn.textContent = '🔍 Abrir Google Imagens'; btn.disabled = false; }
 
-  // Fila de reserva: começa com tudo, os 6 primeiros vão para o grid
   const fila = [...urls];
 
   function tentarUrl(img, url) {
     img.src = url;
     img.onclick = () => {
-      selecionarFotoDoGrid(img.src);
+      selecionarFotoDoGrid(img.src); // cancela IA e seleciona manualmente
       grid.style.display = 'none';
     };
     img.onerror = () => {
       if (fila.length > 0) {
-        tentarUrl(img, fila.shift()); // tenta próxima da fila
+        tentarUrl(img, fila.shift());
       } else {
-        img.remove(); // sem reserva, remove o slot
+        img.remove();
         if (grid.children.length === 0) grid.style.display = 'none';
       }
     };
@@ -840,6 +992,8 @@ function exibirGridFotos(urls) {
 
   if (iniciais.length > 0) {
     grid.style.display = 'grid';
+    // Dispara seleção automática em paralelo com o grid visível
+    iniciarSelecaoAutomatica(urls);
   }
 }
 
@@ -896,13 +1050,86 @@ async function classificarChapeu(titulo, texto) {
 async function testarServidor() {
   showStatus('cfg-status', 'loading', '<span class="spinner"></span> Testando conexão...');
   try {
-    const res = await fetch(`${SERVER}/`);
+    const res = await fetch(`${SERVER}/status`);
     const data = await res.json();
     showStatus('cfg-status', 'success', '🟢 ' + data.message);
   } catch(e) {
     showStatus('cfg-status', 'error', '🔴 Servidor offline. Aguarde 30s e tente de novo.');
   }
 }
+
+// ── MODAL COOKIE ──
+let _pendingUpload = null; // guarda os dados do upload para retentar após salvar cookie
+
+function abrirModalCookie(dadosUpload) {
+  _pendingUpload = dadosUpload || null;
+  document.getElementById('modal-cookie').classList.add('active');
+  document.getElementById('modal-phpsessid').value = '';
+  document.getElementById('modal-cookie-status').style.display = 'none';
+  setTimeout(() => document.getElementById('modal-phpsessid').focus(), 100);
+}
+
+function fecharModalCookie() {
+  document.getElementById('modal-cookie').classList.remove('active');
+  _pendingUpload = null;
+}
+
+async function salvarCookieModal() {
+  const val = document.getElementById('modal-phpsessid').value.trim();
+  if (!val) {
+    const s = document.getElementById('modal-cookie-status');
+    s.style.display = 'block'; s.className = 'status error';
+    s.textContent = '❌ Cole o PHPSESSID antes de salvar!';
+    return;
+  }
+  const s = document.getElementById('modal-cookie-status');
+  s.style.display = 'block'; s.className = 'status loading';
+  s.innerHTML = '<span class="spinner"></span> Salvando...';
+
+  try {
+    const res = await fetch(`${SERVER}/cookie`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phpsessid: val })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      s.className = 'status success';
+      s.textContent = '✅ Cookie salvo! Reenviando foto...';
+      setTimeout(() => {
+        fecharModalCookie();
+        if (_pendingUpload) confirmarFotoManual(_pendingUpload);
+      }, 900);
+    } else {
+      s.className = 'status error';
+      s.textContent = '❌ ' + (data.erro || 'Erro ao salvar');
+    }
+  } catch(e) {
+    s.className = 'status error';
+    s.textContent = '❌ Erro de conexão.';
+  }
+}
 </script>
+
+<!-- Modal renovar cookie -->
+<div class="modal-overlay" id="modal-cookie" onclick="if(event.target===this)fecharModalCookie()">
+  <div class="modal-box">
+    <div class="modal-title">🍪 Renovar sessão NextSite</div>
+    <div class="modal-desc">
+      Sua sessão expirou ou o cookie não foi encontrado.<br>
+      Abra o NextSite com o <strong>favorito Tanaka</strong>, copie o <strong>PHPSESSID</strong> e cole aqui:
+    </div>
+    <label>PHPSESSID</label>
+    <input type="text" id="modal-phpsessid"
+      placeholder="Cole aqui o valor do cookie"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter')salvarCookieModal()" />
+    <div id="modal-cookie-status" class="status" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn primary" onclick="salvarCookieModal()">💾 Salvar e reenviar</button>
+      <button class="btn" onclick="fecharModalCookie()">Cancelar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

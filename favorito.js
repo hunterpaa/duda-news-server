@@ -8,7 +8,7 @@
   if (match) {
     const ps = JSON.stringify({ phpsessid: match[1] });
     fetch('https://duda-news-server.onrender.com/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps });
-    fetch('http://localhost:3000/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
+    fetch('http://localhost:3003/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
   }
 
   if (!raw) {

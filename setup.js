@@ -32,7 +32,7 @@ const CORRECOES_HTML = [
   {
     descricao: 'Troca servidor Render pelo localhost',
     de: `const SERVER = 'https://duda-news-server.onrender.com';`,
-    para: `const SERVER = 'http://localhost:3000';`,
+    para: `const SERVER = 'http://localhost:3003';`,
   },
   {
     descricao: 'Remove hífens do nome sugerido da foto (usa espaço)',

@@ -8,8 +8,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 const path2 = require('path');
-app.get('/app', (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path2.join(__dirname, 'app-duda.html'));
+});
+app.get('/app', (req, res) => {
+  res.redirect('/');
 });
 
 const HEADERS = {
@@ -77,6 +80,16 @@ function gerarLegenda(titulo) {
   return [...new Set(proprias)].slice(0, 4).join(' ') || extrairPalavrasChave(titulo);
 }
 
+// ── Remove formatação markdown das legendas geradas por IA ──
+function limparLegenda(txt) {
+  return (txt || '')
+    .replace(/^#+\s*/g, '')            // remove # ## ###
+    .replace(/^legenda\s*[:：]\s*/i, '') // remove "Legenda:"
+    .replace(/\*+/g, '')               // remove **negrito**
+    .replace(/[.!?]$/, '')             // remove pontuação no final
+    .trim();
+}
+
 // ── Traduz erros técnicos para português ──
 function traduzirErro(e) {
   if (e.code === 'ECONNRESET')                          return 'Conexão interrompida. Tente de novo.';
@@ -106,8 +119,8 @@ async function comRetry(fn, tentativas = 3) {
 // Cada IP tem seu próprio cookie de sessão — evita conflito entre usuários
 const sessoes = new Map();
 
-// ── HOME ──
-app.get('/', (req, res) => {
+// ── STATUS ──
+app.get('/status', (req, res) => {
   res.json({ ok: true, message: 'Servidor da Duda rodando!' });
 });
 
@@ -233,9 +246,9 @@ app.get('/materia', async (req, res) => {
 });
 
 // ── UPLOAD DE FOTO ──
-// Recebe fotoUrl, titulo e nomeFoto (customizado pelo app)
+// Recebe fotoUrl, titulo, nomeFoto e apiKey (opcional, para Claude Vision)
 app.post('/upload-foto', async (req, res) => {
-  const { fotoUrl, titulo, nomeFoto } = req.body;
+  const { fotoUrl, titulo, nomeFoto, apiKey } = req.body;
 
   if (!fotoUrl || !titulo) {
     return res.status(400).json({ ok: false, erro: 'fotoUrl e titulo são obrigatórios' });
@@ -276,6 +289,96 @@ app.post('/upload-foto', async (req, res) => {
 
     const nomeArquivo = `${nomeSlug}.${ext}`;
 
+    // 2.5. Gera legenda com Claude Vision + texto em paralelo
+    let legendaFinal = legendaExibicao;
+    if (!apiKey) console.log('[LEGENDA] apiKey não recebida — usando fallback');
+    if (apiKey) {
+      try {
+        const imgBytes = imgRes.data.byteLength || imgRes.data.length || 0;
+        const imgKB = Math.round(imgBytes / 1024);
+        const mimeBase = ct.split(';')[0].trim().toLowerCase();
+        const mediaType = ['image/png','image/webp','image/gif'].includes(mimeBase) ? mimeBase : 'image/jpeg';
+        const headers = { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' };
+
+        // Vision só roda se a imagem for <= 1.5MB (base64 ficaria ~2MB)
+        const LIMITE_VISION_KB = 1500;
+        const usarVision = imgKB <= LIMITE_VISION_KB;
+        console.log(`[LEGENDA] Imagem: ${imgKB}KB (${mediaType}) — Vision: ${usarVision ? 'sim' : 'NÃO (muito grande)'}`);
+
+        const chamarTexto = () => axios.post('https://api.anthropic.com/v1/messages', {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 40,
+          messages: [{ role: 'user', content: `Com base neste título de matéria esportiva, crie uma legenda curta de até 8 palavras em português para a foto. Sem pontuação no final.\n\nTítulo: "${titulo}"` }],
+        }, { headers, timeout: 9000 });
+
+        let promessaVision;
+        if (usarVision) {
+          const base64Img = Buffer.from(imgRes.data).toString('base64');
+          promessaVision = axios.post('https://api.anthropic.com/v1/messages', {
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 40,
+            messages: [{ role: 'user', content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Img } },
+              { type: 'text', text: `Matéria: "${titulo}"\n\nDescreva esta foto esportiva em até 8 palavras em português. Use o contexto da matéria para identificar times e jogadores. Sem pontuação no final. Exemplo: Jogadores do Flamengo comemoram vitória` }
+            ]}],
+          }, { headers, timeout: 15000 });
+        } else {
+          promessaVision = Promise.reject(new Error('Imagem muito grande — Vision pulado'));
+        }
+
+        const [resVision, resTexto] = await Promise.allSettled([promessaVision, chamarTexto()]);
+
+        const legVision = resVision.status === 'fulfilled' ? limparLegenda(resVision.value.data.content[0].text) : null;
+        const legTexto  = resTexto.status  === 'fulfilled' ? limparLegenda(resTexto.value.data.content[0].text)  : null;
+
+        if (legVision) console.log(`[LEGENDA] 📷 Vision OK: "${legVision}"`);
+        else {
+          let err = resVision.reason?.message || 'erro desconhecido';
+          if (resVision.reason?.response?.data) {
+            try { const d = resVision.reason.response.data; err = typeof d === 'object' ? JSON.stringify(d).substring(0, 300) : String(d).substring(0, 300); } catch {}
+          }
+          console.warn(`[LEGENDA] 📷 Vision falhou: ${err}`);
+        }
+        if (legTexto) console.log(`[LEGENDA] 📝 Texto OK: "${legTexto}"`);
+        else console.warn(`[LEGENDA] 📝 Texto falhou: ${resTexto.reason?.message}`);
+
+        if (legVision && legTexto) {
+          // Ambos funcionaram — combina as duas informações numa 3ª chamada rápida
+          try {
+            const resCombinar = await axios.post('https://api.anthropic.com/v1/messages', {
+              model: 'claude-haiku-4-5-20251001',
+              max_tokens: 40,
+              messages: [{ role: 'user', content:
+                `Você tem duas descrições de uma foto esportiva e o título da matéria. Combine as informações para criar UMA legenda única de até 8 palavras em português. Use nomes próprios e contexto do título quando souber. Sem pontuação no final.\n\nTítulo: "${titulo}"\nO que aparece na foto: "${legVision}"\nContexto da matéria: "${legTexto}"\n\nLegenda:`
+              }],
+            }, { headers, timeout: 8000 });
+            const legCombinada = limparLegenda(resCombinar.data.content[0].text);
+            if (legCombinada) {
+              console.log(`[LEGENDA] 🔀 Combinada: "${legCombinada}"`);
+              legendaFinal = legCombinada;
+            } else {
+              legendaFinal = legVision;
+            }
+          } catch(eComb) {
+            console.warn(`[LEGENDA] 🔀 Combinar falhou: ${eComb.message} — usando Vision`);
+            legendaFinal = legVision;
+          }
+        } else if (legVision) {
+          legendaFinal = legVision;
+        } else if (legTexto) {
+          legendaFinal = legTexto;
+        }
+
+        if (legendaFinal !== legendaExibicao) {
+          console.log(`[LEGENDA] ✅ Usando: "${legendaFinal}"`);
+        } else {
+          console.warn('[LEGENDA] ⚠️ Todos falharam — usando nome abreviado');
+        }
+      } catch(e) {
+        console.warn('[LEGENDA] Erro inesperado:', e.message);
+      }
+    }
+
     // 3. Monta o FormData e envia ao NextSite
     const form = new FormData();
     form.append('files[]', Buffer.from(imgRes.data), {
@@ -284,36 +387,148 @@ app.post('/upload-foto', async (req, res) => {
     });
     form.append('parent_wda[0]', '6');
     form.append('empresa', '1');
-    form.append('titulo_wda[0]', legendaExibicao);    // legenda que aparece no jornal
-    form.append('credito_wda[0]', 'Estadão Conteúdo');
-    form.append('descricao_wda[0]', titulo);
+    form.append('titulo_wda[0]', legendaFinal);
+    form.append('credito_wda[0]', '');
+    form.append('descricao_wda[0]', legendaFinal);
     form.append('keyword_wda[0]', '');
     form.append('transparencia_wda[0]', '0');
     form.append('publica[0]', '1');
 
-    const uploadRes = await comRetry(() => axios.post(
-      'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
-      form,
-      {
-        headers: {
-          ...form.getHeaders(),
-          'Cookie': `PHPSESSID=${phpSessionId}`,
-          'Referer': 'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/novo.php?empresa=1&parent=6',
-          'Origin': 'https://admin-dc4.nextsite.com.br',
-          'Connection': 'keep-alive',
-        },
-        timeout: 35000,
+    let uploadRes;
+    try {
+      uploadRes = await comRetry(() => axios.post(
+        'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/jquery-upload/jqueryupload.php',
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            'Cookie': `PHPSESSID=${phpSessionId}`,
+            'Referer': 'https://admin-dc4.nextsite.com.br/t53kx1_admin/webdisco/novo.php?empresa=1&parent=6',
+            'Origin': 'https://admin-dc4.nextsite.com.br',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Connection': 'keep-alive',
+          },
+          timeout: 35000,
+        }
+      ));
+    } catch (uploadErr) {
+      const status = uploadErr.response?.status;
+      console.error(`[UPLOAD] Erro no NextSite: ${uploadErr.message}`);
+      if (status === 403 || status === 401) {
+        return res.status(401).json({ ok: false, erro: 'Cookie expirado. Renove o cookie e tente de novo.' });
       }
-    ));
+      throw uploadErr;
+    }
 
     // Loga a resposta do NextSite para debug
     console.log(`[UPLOAD] Foto enviada: ${nomeArquivo} → status ${uploadRes.status}`);
 
-    res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaExibicao });
+    res.json({ ok: true, message: 'Foto enviada!', nomeArquivo, legendaExibicao, legendaFinal });
 
   } catch (e) {
     console.error(`[UPLOAD] Erro: ${e.message}`);
     res.status(500).json({ ok: false, erro: traduzirErro(e) });
+  }
+});
+
+// ── SELEÇÃO AUTOMÁTICA DE FOTO ──
+// Recebe candidatas do Google Imagens, Claude escolhe a melhor pelo índice e gera legenda inicial
+app.post('/escolher-foto', async (req, res) => {
+  const { urls, titulo, apiKey } = req.body;
+  if (!urls?.length || !titulo || !apiKey) {
+    return res.status(400).json({ ok: false, erro: 'urls, titulo e apiKey obrigatórios' });
+  }
+
+  // Pré-filtro sem download — elimina logos e formatos inúteis pela URL
+  const filtradas = urls.filter(url => {
+    if (!/^https?:\/\//i.test(url)) return false;
+    if (/logo|escudo|crest|badge|icon|avatar|spinner|placeholder/i.test(url)) return false;
+    if (/\.(gif|svg|ico)(\?|$)/i.test(url)) return false;
+    return true;
+  }).slice(0, 4);
+
+  if (filtradas.length === 0) {
+    return res.status(422).json({ ok: false, erro: 'Nenhuma URL passou no filtro' });
+  }
+
+  console.log(`[FOTO] 🔍 Analisando ${filtradas.length} candidatas para: "${titulo.substring(0, 50)}"`);
+
+  try {
+    // Baixa as candidatas em paralelo para converter em base64
+    // (URLs do Google bloqueiam acesso direto pela Anthropic)
+    const downloads = await Promise.allSettled(filtradas.map(url =>
+      axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 6000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.google.com/',
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+      })
+    ));
+
+    // Monta lista apenas com os downloads que funcionaram
+    const imagensOk = downloads
+      .map((r, i) => ({ resultado: r, url: filtradas[i] }))
+      .filter(x => x.resultado.status === 'fulfilled')
+      .map(x => {
+        const ct = (x.resultado.value.headers['content-type'] || 'image/jpeg').split(';')[0].trim().toLowerCase();
+        const mediaType = ['image/png', 'image/webp', 'image/gif'].includes(ct) ? ct : 'image/jpeg';
+        const base64 = Buffer.from(x.resultado.value.data).toString('base64');
+        return { url: x.url, mediaType, base64 };
+      });
+
+    if (imagensOk.length === 0) {
+      return res.status(422).json({ ok: false, erro: 'Não foi possível baixar nenhuma imagem candidata' });
+    }
+
+    console.log(`[FOTO] 📥 ${imagensOk.length}/${filtradas.length} imagens baixadas com sucesso`);
+
+    // Monta prompt com base64
+    const conteudo = [
+      ...imagensOk.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } })),
+      { type: 'text', text: `Matéria esportiva: "${titulo}"\n\nVocê recebeu ${imagensOk.length} foto(s) acima (índices 0 a ${imagensOk.length - 1}).\nEscolha a MELHOR foto para ilustrar esta matéria. Responda SOMENTE com JSON válido, sem texto extra:\n{"index": 0, "legenda": "descrição em até 8 palavras"}` },
+    ];
+
+    const r = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 60,
+      messages: [{ role: 'user', content: conteudo }],
+    }, {
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      timeout: 8000,
+    });
+
+    const texto = r.data.content[0].text.trim();
+    // Extrai JSON mesmo que Claude adicione texto ao redor
+    const match = texto.match(/\{[\s\S]*?\}/);
+    if (!match) throw new Error(`Resposta não é JSON: ${texto.substring(0, 100)}`);
+
+    const parsed = JSON.parse(match[0]);
+    const idx = parsed.index;
+
+    if (typeof idx !== 'number' || idx < 0 || idx >= imagensOk.length) {
+      throw new Error(`Índice inválido: ${idx} (temos ${imagensOk.length} imagens)`);
+    }
+
+    const urlEscolhida = imagensOk[idx].url;
+    const legenda = limparLegenda(parsed.legenda || '');
+    console.log(`[FOTO] ✅ Escolheu índice ${idx} | legenda: "${legenda}"`);
+
+    // candidatas: URL escolhida primeiro, depois as demais para fallback de download
+    const candidatas = [
+      urlEscolhida,
+      ...imagensOk.filter((_, i) => i !== idx).map(x => x.url),
+      ...filtradas.filter(u => !imagensOk.some(x => x.url === u)),
+    ];
+
+    res.json({ ok: true, index: 0, url: urlEscolhida, legenda, candidatas });
+
+  } catch (e) {
+    const err = e.response?.data ? JSON.stringify(e.response.data).substring(0, 200) : e.message;
+    console.warn(`[FOTO] ❌ Seleção automática falhou: ${err}`);
+    res.status(500).json({ ok: false, erro: err });
   }
 });
 
@@ -368,5 +583,5 @@ app.get('/foto-enviada', (req, res) => {
   res.json({ foi });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => console.log(`Servidor da Duda rodando na porta ${PORT}`));

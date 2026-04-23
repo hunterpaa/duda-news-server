@@ -11,7 +11,7 @@ const MAX_LOGS = 500;
 const clients = [];
 const clientsFull = [];
 
-const DETAIL_PREFIXES = ['[MATÉRIA]', '[MATÉRIAS]', '[UPLOAD]', '[COOKIE]'];
+const DETAIL_PREFIXES = ['[MATÉRIA]', '[MATÉRIAS]', '[UPLOAD]', '[COOKIE]', '[LEGENDA]'];
 
 function isDetail(text) {
   return DETAIL_PREFIXES.some(p => text.startsWith(p));
@@ -32,7 +32,7 @@ function getStatus() {
 
 function freePort3000() {
   try {
-    execSync('for /f "tokens=5" %a in (\'netstat -aon ^| findstr " :3000 "\') do taskkill /F /PID %a', { shell: 'cmd.exe', stdio: 'ignore' });
+    execSync('for /f "tokens=5" %a in (\'netstat -aon ^| findstr " :3003 "\') do taskkill /F /PID %a', { shell: 'cmd.exe', stdio: 'ignore' });
   } catch {}
 }
 
@@ -42,7 +42,7 @@ function killTree(pid) {
 
 function startServer() {
   if (getStatus() === 'online') return;
-  addLog('Liberando porta 3000...', 'info');
+  addLog('Liberando porta 3003...', 'info');
   freePort3000();
   setTimeout(() => {
     serverProcess = spawn('node', ['server.js'], {
@@ -59,7 +59,7 @@ function startServer() {
       const msg = d.toString().trim();
       if (!msg) return;
       if (msg.includes('EADDRINUSE')) {
-        addLog('Erro: porta 3000 ainda em uso. Tente reiniciar o gerenciador.', 'error');
+        addLog('Erro: porta 3003 ainda em uso. Tente reiniciar o gerenciador.', 'error');
       } else {
         addLog(msg, 'error');
       }
@@ -214,7 +214,7 @@ app.get('/', (req, res) => res.send(`<!DOCTYPE html>
     <button class="btn-stop"    id="btnStop"    onclick="action('stop')">Parar</button>
     <button class="btn-restart" id="btnRestart" onclick="action('restart')">Reiniciar</button>
   </div>
-  <button class="btn-open" id="btnOpen" onclick="window.open('http://localhost:3000/app','_blank')" disabled>Abrir App</button>
+  <button class="btn-open" id="btnOpen" onclick="window.open('http://localhost:3003','_blank')" disabled>Abrir App</button>
   <button class="btn-logs" onclick="window.open('/logs','_blank')">Ver logs completos</button>
 
   <div class="log-header">
@@ -232,7 +232,7 @@ app.get('/', (req, res) => res.send(`<!DOCTYPE html>
     dot.className = 'dot ' + s;
     if (s === 'online') {
       label.childNodes[0].textContent = 'Online ';
-      sub.textContent = '— localhost:3000';
+      sub.textContent = '— localhost:3003';
     } else {
       label.childNodes[0].textContent = 'Offline ';
       sub.textContent = '';
@@ -283,7 +283,8 @@ app.get('/', (req, res) => res.send(`<!DOCTYPE html>
 </body>
 </html>`));
 
-const PORT = 3001;
+const PORT = 3002;
 app.listen(PORT, () => {
   console.log(`Gerenciador rodando em http://localhost:${PORT}`);
+  startServer();
 });

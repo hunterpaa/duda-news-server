@@ -40,3 +40,27 @@ This is a Node.js/Express proxy server that bridges a mobile frontend with two e
 - `gerarLegenda()` — builds display captions
 
 All UI text, comments, and variable names are in Portuguese.
+
+## Git / Deploy
+
+Este repositório tem dois remotes:
+- **`origin`** (`tanaka-local`) — repositório local completo, todos os arquivos
+- **`producao`** (`duda-news-server`) — servidor Render, **apenas 3 arquivos permitidos**
+
+### Regra de deploy para produção
+O remote `producao` usa o branch `deploy-producao` e só deve conter:
+- `server.js`
+- `package.json`
+- `app-duda.html`
+
+**NUNCA** fazer push direto de `master` para `producao`. Sempre usar o branch `deploy-producao`.
+
+Para subir atualizações para produção:
+```bash
+git checkout deploy-producao
+# copiar manualmente as alterações dos 3 arquivos se necessário
+git add server.js package.json app-duda.html
+git commit -m "deploy: descrição da mudança"
+git push producao deploy-producao:main
+git checkout master
+```

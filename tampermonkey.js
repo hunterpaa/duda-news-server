@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tanaka → NextSite (auto-preencher)
 // @namespace    http://tampermonkey.net/
-// @version      4.2
+// @version      4.3
 // @description  Preenche o formulário do NextSite automaticamente com os dados do app da Duda
 // @author       Duda & Claude
 // @match        https://admin-dc4.nextsite.com.br/t53kx1_admin/*
@@ -23,7 +23,7 @@
     if (match) {
       const ps = JSON.stringify({ phpsessid: match[1] });
       fetch('https://duda-news-server.onrender.com/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps });
-      fetch('http://localhost:3000/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
+      fetch('http://localhost:3003/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
     }
     const d = document.createElement('div');
     d.innerHTML = '✅ Cookie renovado!';
@@ -38,7 +38,7 @@
   if (match) {
     const ps = JSON.stringify({ phpsessid: match[1] });
     fetch('https://duda-news-server.onrender.com/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps });
-    fetch('http://localhost:3000/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
+    fetch('http://localhost:3003/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ps }).catch(() => {});
   }
 
   // Lê dados do ?tanaka= (base64) ou do sessionStorage (caso haja redirect)
@@ -179,7 +179,6 @@
     (params.get('udm') === '2' || params.get('tbm') === 'isch');
   if (!isGoogleImagens) return;
 
-
   setTimeout(() => {
     const urls = [];
     console.log('[Tanaka] Google Imagens: iniciando extração...');
@@ -254,13 +253,13 @@
     if (!enviouPorOpener) {
       const body = JSON.stringify({ urls: payload });
       const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body };
-      fetch('http://localhost:3000/google-imagens', opts).catch(() => {});
+      fetch('http://localhost:3003/google-imagens', opts).catch(() => {});
       fetch('https://duda-news-server.onrender.com/google-imagens', opts).catch(() => {});
 
       // Polling: fecha a aba quando o app confirmar que a foto foi enviada
       const ivFoto = setInterval(() => {
         Promise.any([
-          fetch('http://localhost:3000/foto-enviada').then(r => r.json()),
+          fetch('http://localhost:3003/foto-enviada').then(r => r.json()),
           fetch('https://duda-news-server.onrender.com/foto-enviada').then(r => r.json()),
         ]).then(data => {
           if (data.foi) { clearInterval(ivFoto); window.close(); }
