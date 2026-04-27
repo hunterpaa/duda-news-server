@@ -70,6 +70,32 @@ textarea:focus { outline: none; border-color: var(--pink); }
 .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── MODAL COOKIE ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: white;
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border-top: 4px solid var(--pink);
+}
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: #1a1a1a; }
+.modal-desc { font-size: 13px; color: #888; margin-bottom: 1rem; line-height: 1.6; }
+.modal-box input { margin-bottom: 10px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 4px; }
+.modal-btns .btn { flex: 1; }
+
 /* ── GRID FOTOS GOOGLE ── */
 #google-fotos-grid {
   display: none;
@@ -83,6 +109,11 @@ textarea:focus { outline: none; border-color: var(--pink); }
   cursor: pointer; transition: border-color .2s, transform .15s;
 }
 #google-fotos-grid img:hover { border-color: #4285f4; transform: scale(1.03); }
+#google-fotos-grid img.ia-selecionada {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px #22c55e44;
+  transform: scale(1.03);
+}
 
 /* ── CAMPO LEGENDA / NOME FOTO ── */
 .nome-foto-box {
@@ -137,6 +168,59 @@ textarea:focus { outline: none; border-color: var(--pink); }
 /* ── AVISO URL DIRETA ── */
 .aviso-url { font-size: 12px; color: #e65100; margin-top: 6px; display: none; font-weight: 600; }
 
+/* ── CANAL DE COMUNICAÇÃO (botão flutuante + modal) ── */
+#btn-canal-float {
+  position: fixed; top: 70px; right: 12px; z-index: 150;
+  background: linear-gradient(135deg, #1565c0, #283593);
+  color: white; border: none; border-radius: 50px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  display: flex; align-items: center; gap: 6px;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s;
+}
+#btn-canal-float:active { transform: scale(0.95); }
+#canal-badge {
+  background: #c2185b; color: white; font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: none; align-items: center; justify-content: center; padding: 0 4px;
+}
+.canal-modal-box {
+  background: white; border-radius: var(--radius); width: 100%;
+  max-width: 420px; max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-top: 4px solid #1565c0;
+}
+.canal-header {
+  padding: 1.1rem 1.2rem 0.9rem; background: #e3f2fd;
+  border-bottom: 1.5px solid #bbdefb;
+}
+.canal-title { font-size: 17px; font-weight: 700; color: #1565c0; margin-bottom: 2px; }
+.canal-desc { font-size: 12px; color: #888; }
+.canal-section { padding: 1rem 1.2rem; }
+.canal-section-title {
+  font-size: 11px; font-weight: 700; color: #1565c0;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+}
+.canal-update-item {
+  padding: 8px 0; border-bottom: 1px solid #f5f5f5;
+  font-size: 13px; line-height: 1.5; color: #333;
+}
+.canal-update-item:last-child { border-bottom: none; padding-bottom: 0; }
+.canal-update-data { font-size: 10px; color: #aaa; margin-bottom: 2px; font-weight: 600; letter-spacing: 0.3px; }
+.canal-novo-tag {
+  display: inline-block; background: #fce4ec; color: #c2185b;
+  font-size: 10px; font-weight: 700; padding: 1px 7px;
+  border-radius: 10px; margin-left: 6px; vertical-align: middle;
+}
+.canal-divider { border: none; border-top: 1.5px dashed #e3f2fd; margin: 0; }
+.canal-textarea {
+  width: 100%; border: 2px solid var(--pink-border); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 15px; font-family: inherit;
+  line-height: 1.55; resize: none; min-height: 90px;
+  color: #1a1a1a; background: white; -webkit-appearance: none; appearance: none;
+}
+.canal-textarea:focus { outline: none; border-color: var(--pink); }
+
 @media (min-width: 600px) {
   .btn-row .btn.primary, .btn-row .btn.purple { flex: none; }
   .btn.full { width: auto; }
@@ -173,13 +257,16 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
     <div class="card" id="step1">
       <div class="card-label">📰 Passo 1</div>
-      <div class="card-title">Últimas matérias</div>
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        Últimas matérias
+        <span id="server-status" style="font-size:12px;font-weight:500;color:#999;cursor:pointer;" onclick="verificarServidor()" title="Toque para verificar">🟡 Verificando...</span>
+      </div>
       <div class="news-list" id="news-list">
         <div style="font-size:14px;color:#ccc;padding:16px 0;text-align:center;">Toque em buscar para carregar 🏃‍♀️</div>
       </div>
       <div id="s1-status" class="status" style="display:none"></div>
       <button class="btn primary full" onclick="buscarMaterias()" id="btn-buscar" style="margin-top:1rem;">⚡ Buscar matérias</button>
-      <button class="btn full" onclick="window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1', '_blank')" style="margin-top:8px;">🔑 Renovar Cookie</button>
+      <button class="btn full" onclick="loginNextSite()" style="margin-top:8px;">🔑 Renovar Cookie</button>
       <span id="buscar-hint"></span>
     </div>
 
@@ -266,9 +353,25 @@ textarea:focus { outline: none; border-color: var(--pink); }
         <input type="text" id="edit-titulo" autocomplete="off" />
       </div>
       <div class="field">
+        <label>Complemento 📌 <span style="font-weight:400;color:#aaa;">(opcional · até 100 caracteres)</span></label>
+        <div id="complemento-loading" style="display:none;font-size:12px;color:#aaa;margin-bottom:6px;"><span class="spinner"></span> Gerando sugestões de complemento...</div>
+        <div id="complemento-sugestoes" style="display:none;margin-bottom:8px;background:#fdf4f8;border:1px solid var(--pink-border);border-radius:var(--radius-sm);padding:10px;">
+          <span style="font-size:11px;color:#e91e8c;font-weight:700;">Sugestões da IA — toque para usar:</span>
+          <div id="complemento-sugestoes-lista" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+          <button class="btn small" onclick="usarComplemento('')" style="margin-top:8px;border-color:#ccc;color:#999;">✖ Sem complemento</button>
+        </div>
+        <input type="text" id="edit-complemento" maxlength="100" placeholder="Deixe vazio para não usar (opcional)" autocomplete="off" oninput="updateComplementoCount()" />
+        <div class="char-count" id="complemento-count">0 / 100</div>
+      </div>
+      <div class="field">
         <label>Texto completo 📄</label>
         <textarea id="edit-texto" rows="10" oninput="updateCount()"></textarea>
         <div class="char-count" id="char-count">0 caracteres</div>
+      </div>
+      <div class="field">
+        <label>Autor ✍️</label>
+        <div id="edit-autor-display" style="padding:12px 14px;background:#fdf4f8;border:1.5px solid var(--pink-border);border-radius:var(--radius-sm);font-size:14px;color:#888;min-height:48px;display:flex;align-items:center;">—</div>
+        <input type="hidden" id="edit-autor" />
       </div>
       <div id="s2-status" class="status" style="display:none"></div>
       <div class="btn-row">
@@ -283,9 +386,9 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
       <div style="background:#e8f0fe;border:1.5px solid #b3d4f5;border-radius:var(--radius-sm);padding:1rem;margin-bottom:10px;">
         <p style="font-size:14px;color:#333;margin-bottom:10px;line-height:1.5;">
-          Abre o Google Imagens com a busca pronta e carrega as fotos HD automaticamente aqui.
+          Abre o Bing Imagens com a busca pronta e carrega as fotos automaticamente aqui.
         </p>
-        <button id="btn-google-fotos" onclick="abrirGoogleImagens()" class="btn full" style="background:#4285f4;color:white;border-color:#4285f4;">🔍 Abrir Google Imagens</button>
+        <button id="btn-google-fotos" onclick="abrirGoogleImagens()" class="btn full" style="background:#008272;color:white;border-color:#008272;">🔍 Buscar fotos no Bing</button>
         <div id="google-fotos-grid"></div>
       </div>
 
@@ -304,21 +407,27 @@ textarea:focus { outline: none; border-color: var(--pink); }
         </div>
       </div>
 
-      <div class="nome-foto-box">
-        <label>🏷️ Nome da foto no Diário de Cuiabá:</label>
-        <input type="text" id="foto-nome"
-          placeholder="Ex: gremio inter"
-          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <div style="margin-top:6px;">
-          <span style="font-size:11px;color:#bbb;">Sugestão: </span>
-          <span class="sugestao-tag" id="sugestao-nome" onclick="usarSugestao()">—</span>
+
+      <div id="step3-legenda-box" style="display:none;margin-bottom:10px;background:#fdf4f8;border:1.5px solid var(--pink-border);border-radius:var(--radius-sm);padding:12px;">
+        <label style="font-size:13px;color:#888;font-weight:600;display:block;margin-bottom:6px;">Legenda da foto 📝</label>
+        <div id="step3-legenda-loading" style="display:none;font-size:12px;color:#aaa;margin-bottom:6px;"><span class="spinner"></span> IA analisando a foto e gerando legendas...</div>
+        <div id="step3-legenda-sugestoes" style="display:none;margin-bottom:8px;">
+          <span style="font-size:11px;color:#e91e8c;font-weight:700;">Sugestões da IA — toque para usar:</span>
+          <div id="step3-legenda-lista" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+          <button class="btn small" onclick="usarLegendaStep3('')" style="margin-top:8px;border-color:#ccc;color:#999;">✖ Sem legenda</button>
         </div>
-        <div class="nome-foto-hint">Esse nome aparece no Diário de Cuiabá. Toque na sugestão para usar, ou escreva o que quiser.</div>
+        <input type="text" id="step3-legenda-input"
+          placeholder="Toque numa sugestão ou escreva aqui"
+          autocomplete="off" autocorrect="off" autocapitalize="sentences"
+          style="width:100%;height:var(--input-h);border:2px solid var(--pink-border);border-radius:var(--radius-sm);padding:0 14px;font-size:16px;font-family:inherit;background:white;color:#1a1a1a;" />
+        <div style="font-size:11px;color:#bbb;margin-top:4px;">Aparece abaixo da foto no site.</div>
       </div>
 
       <div id="foto-upload-status" class="status" style="display:none"></div>
+      <button id="btn-renovar-cookie-step3" class="btn small full" style="display:none;margin-top:8px;" onclick="loginNextSite(null,'foto-upload-status')">🔑 Renovar Cookie e tentar de novo</button>
       <div class="btn-row">
         <button class="btn primary" onclick="confirmarFotoManual()" id="btn-confirmar-foto" disabled>📤 Enviar foto →</button>
+        <button class="btn" onclick="postarSemFoto()" style="background:#ff8f00;color:white;">🚀 Sem foto →</button>
         <button class="btn" onclick="goStep2()">← Voltar</button>
       </div>
     </div>
@@ -332,12 +441,21 @@ textarea:focus { outline: none; border-color: var(--pink); }
         <div class="preview-label">Prévia</div>
         <div class="preview-texto" id="conf-preview">—</div>
       </div>
-      <div class="publish-hint">✅ Texto copiado! No Diário de Cuiabá: cole o título, cole o texto, selecione a foto e publique! 🎉</div>
+      <div id="conf-legenda-box" style="display:none;margin-bottom:1rem;">
+        <label style="font-size:13px;color:#888;font-weight:600;display:block;margin-bottom:6px;">Legenda da foto 📝</label>
+        <input type="text" id="conf-legenda"
+          placeholder="Legenda escolhida no passo anterior"
+          autocomplete="off" autocorrect="off" autocapitalize="sentences"
+          style="width:100%;height:var(--input-h);border:2px solid var(--pink-border);border-radius:var(--radius-sm);padding:0 14px;font-size:16px;font-family:inherit;background:white;color:#1a1a1a;" />
+        <div style="font-size:11px;color:#bbb;margin-top:4px;">Aparece abaixo da foto no site.</div>
+      </div>
+      <div class="publish-hint">🤖 Tudo pronto! Clique em Postar — o servidor vai abrir o Diário de Cuiabá no PC, preencher o formulário e publicar automaticamente! 🎉</div>
       <div id="s4-status" class="status" style="display:none"></div>
       <div class="btn-row">
-        <button class="btn purple" onclick="copiarEAbrir()" id="btn-publicar">🚀 Copiar e abrir Diário de Cuiabá</button>
+        <button class="btn purple" onclick="postarAutomatico()" id="btn-publicar">🚀 Postar no Diário de Cuiabá</button>
         <button class="btn" onclick="goStep3()">← Voltar</button>
       </div>
+      <button class="btn full" onclick="recomecar()" style="margin-top:10px;background:#f5f5f5;color:#555;border:1.5px solid #ddd;">🔄 Próxima matéria</button>
     </div>
   </div>
 
@@ -345,17 +463,19 @@ textarea:focus { outline: none; border-color: var(--pink); }
     <div class="card">
       <div class="card-label">⚙️ Configurações</div>
       <div class="card-title">Acesso ao Diário de Cuiabá</div>
-      <div class="field"><label>E-mail 📧</label><input type="email" id="cfg-user" placeholder="duda@diariodecuiaba.com.br" autocomplete="email" /></div>
+      <div class="field"><label>Login NextSite 👤</label><input type="text" id="cfg-user" placeholder="Maria Eduarda" autocomplete="username" /></div>
       <div class="field"><label>Senha 🔑</label><input type="password" id="cfg-pass" placeholder="••••••••" autocomplete="current-password" /></div>
       <div class="divider"></div>
       <div class="field"><label>Chave Anthropic 🤖 (chapéu automático)</label><input type="password" id="cfg-anthropic" placeholder="sk-ant-..." autocomplete="off" /></div>
+      <div class="divider"></div>
+      <div class="field"><label>Token de Acesso 🔐 <span style="font-weight:400;color:#aaa;">(só preencha se usar Cloudflare Tunnel)</span></label><input type="password" id="cfg-token" placeholder="Deixe vazio para acesso local" autocomplete="off" /></div>
       <div class="divider"></div>
       <div style="font-size:12px;color:#aaa;margin-bottom:4px;font-weight:600;">Servidor</div>
       <div class="url-mono">https://duda-news-server.onrender.com</div>
       <div class="btn-row" style="margin-top:1rem;">
         <button class="btn primary" onclick="salvarConfig()">💾 Salvar</button>
         <button class="btn" onclick="testarServidor()">🔌 Testar</button>
-        <button class="btn purple" onclick="window.open('https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1', '_blank')">🔑 Renovar Cookie</button>
+        <button class="btn purple" onclick="loginNextSite(null,'cfg-status')">🔑 Fazer Login</button>
       </div>
       <div id="cfg-status" class="status" style="display:none;margin-top:10px;"></div>
     </div>
@@ -363,16 +483,54 @@ textarea:focus { outline: none; border-color: var(--pink); }
 </div>
 
 <script>
-const SERVER = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : 'https://duda-news-server.onrender.com';
+// Sempre usa o mesmo servidor de onde a página foi carregada
+// → localhost no PC, IP local no iPhone, Render quando online
+const SERVER = window.location.origin;
 const NEXTSITE = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/conteudos/novo.php?empresa=1&parent=8';
+
+// ── Token de acesso (para quando o servidor estiver exposto via Cloudflare) ──
+function getToken() { return localStorage.getItem('tanaka_token') || ''; }
+function fetchAuth(url, opts = {}) {
+  const token = getToken();
+  if (token) {
+    opts.headers = { ...(opts.headers || {}), 'X-Tanaka-Token': token };
+  }
+  return fetch(url, opts);
+}
 
 window.onload = () => {
   document.getElementById('cfg-user').value = localStorage.getItem('duda_user') || '';
   document.getElementById('cfg-pass').value = localStorage.getItem('duda_pass') || '';
   document.getElementById('cfg-anthropic').value = localStorage.getItem('anthropic_key') || '';
+  document.getElementById('cfg-token').value = getToken();
+  verificarServidor(); // checa status ao abrir
+  setInterval(verificarServidor, 30000); // revalida a cada 30s
+  sincronizarPublicadas(); // sincroniza matérias publicadas com o servidor
+  renderizarChangelog(); // inicializa badge de novidades
 };
+
+// ── Indicador de status do servidor ──
+async function verificarServidor() {
+  const el = document.getElementById('server-status');
+  if (!el) return;
+  el.textContent = '🟡 Verificando...';
+  el.style.color = '#999';
+  try {
+    const t0 = Date.now();
+    const r = await fetch(`${SERVER}/health`, { signal: AbortSignal.timeout(4000) });
+    const ms = Date.now() - t0;
+    if (r.ok) {
+      el.textContent = ms < 800 ? '🟢 Online' : '🟡 Lento';
+      el.style.color = ms < 800 ? '#2e7d32' : '#e65100';
+    } else {
+      el.textContent = '🔴 Erro';
+      el.style.color = '#c62828';
+    }
+  } catch(e) {
+    el.textContent = '🔴 Offline';
+    el.style.color = '#c62828';
+  }
+}
 
 function switchTab(t) {
   document.getElementById('tab-publicar').style.display = t === 'publicar' ? 'block' : 'none';
@@ -413,7 +571,7 @@ async function buscarMaterias() {
   showStatus('s1-status', 'loading', '<span class="spinner"></span> Buscando matérias...');
   document.getElementById('news-list').innerHTML = '';
   try {
-    const res = await fetch(`${SERVER}/materias`);
+    const res = await fetchAuth(`${SERVER}/materias`);
     const data = await res.json();
     hideStatus('s1-status');
     document.getElementById('buscar-hint').textContent = '';
@@ -437,6 +595,18 @@ function getPublicadas() {
 function marcarPublicada(link) {
   const lista = getPublicadas();
   if (!lista.includes(link)) { lista.push(link); localStorage.setItem('tanaka_publicadas', JSON.stringify(lista)); }
+  fetchAuth(`${SERVER}/publicadas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ links: [link] }) }).catch(() => {});
+}
+async function sincronizarPublicadas() {
+  try {
+    const local = getPublicadas();
+    const res = await fetchAuth(`${SERVER}/publicadas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ links: local }) });
+    const data = await res.json();
+    if (Array.isArray(data.links) && data.links.length > 0) {
+      const merged = [...new Set([...local, ...data.links])];
+      localStorage.setItem('tanaka_publicadas', JSON.stringify(merged));
+    }
+  } catch(e) { /* servidor offline — usa localStorage local */ }
 }
 
 function renderMaterias(lista) {
@@ -474,25 +644,40 @@ function renderMaterias(lista) {
   });
 }
 
+function atualizarAutorDisplay(autor) {
+  document.getElementById('edit-autor').value = autor;
+  const d = document.getElementById('edit-autor-display');
+  if (autor) {
+    d.innerHTML = `<strong style="color:#1a1a1a;">✍️ ${autor}</strong>`;
+  } else {
+    d.innerHTML = `<span style="color:#aaa;">Sem autor — será preenchido com <strong>Estadao Conteudo</strong></span>`;
+  }
+}
+
 async function carregarMateria(link, titulo, autorBruto) {
   const autorLimpo = (autorBruto && !autorBruto.toLowerCase().includes('estadão') && !autorBruto.toLowerCase().includes('estadao')) ? autorBruto : '';
-  const autor = autorLimpo || 'Maria Eduarda';
-  document.getElementById('edit-titulo')._autor = autor;
+  atualizarAutorDisplay(autorLimpo);
+  document.getElementById('edit-titulo')._link = '';
+  document.getElementById('edit-complemento').value = '';
+  updateComplementoCount();
+  document.getElementById('complemento-sugestoes').style.display = 'none';
   showStatus('s1-status', 'loading', '<span class="spinner"></span> Carregando texto completo...');
   document.getElementById('edit-titulo').value = titulo;
   document.getElementById('edit-texto').value = '';
   try {
-    const res = await fetch(`${SERVER}/materia?url=${encodeURIComponent(link)}`);
+    const res = await fetchAuth(`${SERVER}/materia?url=${encodeURIComponent(link)}`);
     const data = await res.json();
     if (data.ok) {
       document.getElementById('edit-titulo').value = data.titulo || titulo;
       document.getElementById('edit-titulo')._link = link;
       document.getElementById('edit-texto').value = data.texto || '';
-      if (data.autor) document.getElementById('edit-titulo')._autor = data.autor;
+      if (data.autor !== undefined) atualizarAutorDisplay(data.autor || '');
       updateCount();
       const autorMsg = data.autor ? ` · Autor: ${data.autor}` : '';
       showStatus('s1-status', 'success', `✅ Matéria carregada!${autorMsg} Revise e siga em frente 🌸`);
       classificarChapeu(data.titulo || titulo, data.texto || '');
+      sugerirComplemento(data.titulo || titulo, data.texto || '');
+      prefetchQueryFoto(data.titulo || titulo);
     } else {
       showStatus('s1-status', 'error', '❌ Erro ao carregar. Cole o texto manualmente.');
     }
@@ -511,6 +696,10 @@ function goStep1() {
   hideStatus('s1-status');
   setProgress(1);
   scrollToCard('step1');
+}
+
+function recomecar() {
+  location.reload();
 }
 
 function goStep2() {
@@ -535,16 +724,40 @@ async function goStep3() {
   document.getElementById('btn-confirmar-foto').disabled = true;
   hideStatus('foto-upload-status');
 
-  const sugestao = gerarNomeCurto(titulo);
-  document.getElementById('sugestao-nome').textContent = sugestao;
-  document.getElementById('foto-nome').value = sugestao;
+  // Limpa fotos e legenda da matéria anterior
+  const gridAnterior = document.getElementById('google-fotos-grid');
+  gridAnterior.innerHTML = '';
+  gridAnterior.style.display = 'none';
+  document.getElementById('step3-legenda-box').style.display = 'none';
+  document.getElementById('step3-legenda-input').value = '';
+  document.getElementById('step3-legenda-lista').innerHTML = '';
+  document.getElementById('step3-legenda-sugestoes').style.display = 'none';
 
-  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(titulo)}&udm=2`;
+  // Usa query pré-calculada pela IA (salva no prefetch) ou fallback pro título
+  const queryFinal = window._queryFotoCache || titulo;
+  window._googleFotosQuery = queryFinal;
+  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(queryFinal)}&udm=2&tbs=qdr:d`;
 
   document.getElementById('step3').style.display = 'block';
   document.getElementById('step4').style.display = 'none';
   setProgress(3);
   scrollToCard('step3');
+}
+
+function prefetchQueryFoto(titulo) {
+  window._queryFotoCache = null;
+  const apiKey = localStorage.getItem('anthropic_key') || '';
+  if (!apiKey) return;
+  fetchAuth(`${SERVER}/query-foto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ titulo, apiKey }),
+  }).then(r => r.json()).then(d => {
+    if (d.ok && d.query) {
+      window._queryFotoCache = d.query;
+      console.log('[QUERY-FOTO] pré-carregado:', d.query);
+    }
+  }).catch(() => {});
 }
 
 function gerarNomeCurto(titulo) {
@@ -570,13 +783,30 @@ function gerarNomeCurto(titulo) {
   return escolhidas.map(p => p.toLowerCase()).join(' ') || 'foto esporte';
 }
 
-function usarSugestao() {
-  const sug = document.getElementById('sugestao-nome').textContent;
-  if (sug && sug !== '—') {
-    document.getElementById('foto-nome').value = sug;
-    document.getElementById('foto-nome').focus();
-  }
+// Gera query de busca de foto: remove só artigos/preposições, mantém conteúdo
+// Ex: "F1: FIA aumenta tempo do 1º treino livre em Miami" → "F1 FIA aumenta treino livre Miami adaptação regras"
+function gerarQueryFoto(titulo) {
+  const stop = new Set([
+    'de','do','da','dos','das','em','no','na','nos','nas','por','para','com','sem',
+    'que','se','o','a','os','as','um','uma','ao','e','ou','mas','mais',
+    'foi','é','são','vai','tem','já','após','até','sobre','pelo','pela',
+    'seu','sua','seus','suas','este','esta','isso','isso','aqui','ali',
+  ]);
+  const palavras = titulo
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(p => p.length > 1 && !stop.has(p.toLowerCase()));
+
+  // Nomes próprios vêm TODOS primeiro — garantem o nome do atleta/time na query
+  const proprias = palavras.filter(p => /^[A-Z0-9]/.test(p));
+  // Palavras comuns só completam se sobrar espaço
+  const demais   = palavras.filter(p => /^[a-z]/.test(p) && p.length > 2);
+
+  const escolhidas = [...new Set([...proprias, ...demais.slice(0, 3)])];
+  return escolhidas.join(' ') || titulo.substring(0, 60);
 }
+
 
 function extrairPalavrasChaveSync(titulo) {
   const stopWords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','por','para',
@@ -616,7 +846,21 @@ function pareceUrlDePagina(url) {
   } catch(e) { return false; }
 }
 
+// ── Seleção automática de foto ──
+let _aiCancelada = false;
+let _countdownTimer = null;
+let _candidatas = [];
+
+function cancelarContagem() {
+  _aiCancelada = true;
+  if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+  hideStatus('foto-upload-status');
+  // Remove destaque IA de todas as fotos do grid
+  document.querySelectorAll('#google-fotos-grid img.ia-selecionada').forEach(el => el.classList.remove('ia-selecionada'));
+}
+
 function selecionarFotoDoGrid(url) {
+  cancelarContagem(); // clique manual cancela IA
   document.getElementById('foto-url').value = url;
   document.getElementById('aviso-url').style.display = 'none';
   document.getElementById('btn-confirmar-foto').disabled = false;
@@ -625,6 +869,73 @@ function selecionarFotoDoGrid(url) {
   img.src = url;
   img.style.display = 'block';
   preview.style.display = 'block';
+  gerarLegendasStep3(url);
+}
+
+async function iniciarSelecaoAutomatica(urls) {
+  const apiKey = localStorage.getItem('anthropic_key') || '';
+  if (!apiKey) return; // sem chave = sem automação
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  if (!titulo) return;
+
+  _candidatas = [...urls]; // congela a lista para fallback de upload
+  _aiCancelada = false;
+
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetchAuth(`${SERVER}/escolher-foto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls, titulo, query: window._googleFotosQuery || titulo, apiKey }),
+      signal: ctrl.signal,
+    });
+    const data = await res.json();
+
+    if (_aiCancelada) return; // usuária clicou antes da IA responder
+
+    // Claude rejeitou todas as fotos — grade fica disponível para escolha manual
+    if (data.rejeitado) {
+      console.log('[IA] Nenhuma foto adequada — seleção manual');
+      if (data.candidatas?.length) _candidatas = data.candidatas;
+      return;
+    }
+
+    if (!data.ok || typeof data.index !== 'number') return;
+
+    // Atualiza candidatas com a lista filtrada que o servidor usou
+    if (data.candidatas?.length) _candidatas = [...data.candidatas, ...urls.filter(u => !data.candidatas.includes(u))];
+
+    // Destaca a foto escolhida no grid
+    const grid = document.getElementById('google-fotos-grid');
+    const imgs = grid.querySelectorAll('img');
+    let imgDestacada = null;
+    imgs.forEach(img => {
+      if (img.src === data.url || img.src === data.candidatas?.[data.index]) {
+        img.classList.add('ia-selecionada');
+        imgDestacada = img;
+      }
+    });
+
+    // Preenche os campos como se o usuário tivesse clicado, mas SEM cancelar a contagem
+    document.getElementById('foto-url').value = data.url;
+    document.getElementById('aviso-url').style.display = 'none';
+    document.getElementById('btn-confirmar-foto').disabled = false;
+    const imgPreview = document.getElementById('foto-img-manual');
+    imgPreview.src = data.url;
+    imgPreview.style.display = 'block';
+    document.getElementById('foto-preview-manual').style.display = 'block';
+    window._legendaFoto = data.legenda || '';
+    gerarLegendasStep3(data.url);
+
+    // Scroll para a foto destacada
+    if (imgDestacada) imgDestacada.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    showStatus('foto-upload-status', 'info', '🤖 Claude selecionou esta foto. Confirme ou escolha outra.');
+
+  } catch (e) {
+    // Falhou silenciosamente — grid já está disponível para seleção manual
+  }
 }
 
 function previewFotoUrl() {
@@ -673,6 +984,7 @@ function previewFotoUrl() {
 
   img.onload = () => {
     btn.disabled = false;
+    gerarLegendasStep3(url);
   };
 
   img.onerror = () => {
@@ -684,10 +996,14 @@ function previewFotoUrl() {
   };
 }
 
-async function confirmarFotoManual() {
-  const url = document.getElementById('foto-url').value.trim();
-  const titulo = document.getElementById('edit-titulo').value.trim();
-  const nomeFoto = document.getElementById('foto-nome').value.trim() || gerarNomeCurto(titulo);
+async function confirmarFotoManual(retry) {
+  // retry: objeto { url, titulo } passado após renovar o cookie
+  const url     = retry?.url    || document.getElementById('foto-url').value.trim();
+  const titulo  = retry?.titulo || document.getElementById('edit-titulo').value.trim();
+  const legendaEscolhida = retry?.legendaEscolhida || document.getElementById('step3-legenda-input').value.trim();
+  const nomeFoto = retry?.nomeFoto || legendaEscolhida || gerarNomeCurto(titulo);
+
+  document.getElementById('btn-renovar-cookie-step3').style.display = 'none';
 
   if (!url) {
     showStatus('foto-upload-status', 'error', '❌ Cole o link da foto primeiro!');
@@ -700,17 +1016,23 @@ async function confirmarFotoManual() {
   showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o Diário de Cuiabá...');
 
   try {
-    const res = await fetch(`${SERVER}/upload-foto`, {
+    const res = await fetchAuth(`${SERVER}/upload-foto`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto })
+      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto, descricaoFoto: legendaEscolhida || undefined, apiKey: localStorage.getItem('anthropic_key') || '' })
     });
     const data = await res.json();
     if (data.ok) {
-      fetch(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
+      fetchAuth(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
+      window._legendaFoto = data.legendaFinal || window._legendaFoto || '';
+      window._fotoNomeOriginal = data.legendaFinal || nomeFoto || '';
       showStatus('foto-upload-status', 'success', '✅ Foto enviada! 🌸');
       btn.innerHTML = '✅ Enviada!';
       setTimeout(() => goStep4(), 900);
+    } else if (res.status === 401 || (data.erro && data.erro.toLowerCase().includes('cookie'))) {
+      loginNextSite({ url, titulo, nomeFoto }, 'foto-upload-status');
+      btn.disabled = false;
+      btn.innerHTML = '📤 Enviar foto →';
     } else {
       showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar'));
       btn.disabled = false;
@@ -723,44 +1045,96 @@ async function confirmarFotoManual() {
   }
 }
 
+function postarSemFoto() {
+  window._legendaFoto = null;
+  document.getElementById('edit-titulo')._semFoto = true;
+  goStep4();
+  document.getElementById('step3').style.display = 'none';
+}
+
 function goStep4() {
   const titulo = document.getElementById('edit-titulo').value.trim();
   const texto = document.getElementById('edit-texto').value.trim();
   document.getElementById('conf-titulo').textContent = titulo;
   document.getElementById('conf-preview').textContent = texto.substring(0, 300) + (texto.length > 300 ? '...' : '');
-  navigator.clipboard.writeText(`TÍTULO:\n${titulo}\n\nTEXTO:\n${texto}`).catch(() => {});
+  // Mostra campo de legenda só se tiver foto enviada
+  const legendaBox = document.getElementById('conf-legenda-box');
+  if (window._legendaFoto != null) {
+    document.getElementById('conf-legenda').value = window._legendaFoto;
+    legendaBox.style.display = 'block';
+  } else {
+    legendaBox.style.display = 'none';
+  }
+  // clipboard só funciona em HTTPS — ignora silenciosamente em HTTP (acesso local)
+  try { navigator.clipboard?.writeText(`TÍTULO:\n${titulo}\n\nTEXTO:\n${texto}`).catch(() => {}); } catch {}
   document.getElementById('step4').style.display = 'block';
   setProgress(4);
   scrollToCard('step4');
 }
 
-async function copiarEAbrir() {
+async function postarAutomatico() {
   const titulo = document.getElementById('edit-titulo').value.trim();
   const texto = document.getElementById('edit-texto').value.trim();
   const chapeu = document.getElementById('edit-chapeu').value;
-  const fotoNome = document.getElementById('foto-nome').value.trim();
-
-  try {
-    await navigator.clipboard.writeText(titulo + '\n\n' + texto);
-  } catch(e) {}
-
-  const autor = document.getElementById('edit-titulo')._autor || 'Maria Eduarda';
-  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, autor });
-  const dados = btoa(unescape(encodeURIComponent(json)));
-  const url = NEXTSITE + '&tanaka=' + dados;
-
+  const autor = document.getElementById('edit-autor').value.trim();
+  const complemento = document.getElementById('edit-complemento').value.trim();
+  const legenda = document.getElementById('conf-legenda').value.trim();
   const linkAtual = document.getElementById('edit-titulo')._link || '';
-  if (linkAtual) marcarPublicada(linkAtual);
 
-  showStatus('s4-status', 'success', '🎉 Abrindo Diário de Cuiabá...');
-  setTimeout(() => window.open(url, '_blank'), 400);
+  const semFoto = !!document.getElementById('edit-titulo')._semFoto;
+  document.getElementById('edit-titulo')._semFoto = false;
+  // fotoNome = titulo_wda salvo no upload — Tampermonkey busca pelo mesmo texto
+  const fotoNome = semFoto ? '' : (window._fotoNomeOriginal || legenda || gerarNomeCurto(titulo));
+  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, semFoto, autor, complemento, legenda, servidor: SERVER });
+  const dadosB64 = btoa(unescape(encodeURIComponent(json)));
+  const url = NEXTSITE + '&tanaka=' + dadosB64;
 
   const btn = document.getElementById('btn-publicar');
-  btn.textContent = '✅ Abrindo!';
-  setTimeout(() => { btn.innerHTML = '🚀 Copiar e abrir Diário de Cuiabá'; }, 3000);
-}
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Abrindo Chrome...';
+  showStatus('s4-status', 'loading', '<span class="spinner"></span> Abrindo o Diário de Cuiabá no PC...');
 
-let abaGoogle = null;
+  // Salva URL no servidor para recuperação caso NextSite peça login durante publicação
+  fetchAuth(`${SERVER}/salvar-publicacao`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  }).catch(() => {});
+
+  // Abre Chrome no servidor local E no Render (mesmo padrão das fotos)
+  const urlEnc = encodeURIComponent(url);
+  fetchAuth(`${SERVER}/abrir-google?url=${urlEnc}`).catch(() => {});
+  if (!SERVER.includes('localhost')) {
+    fetch(`http://localhost:3003/abrir-google?url=${urlEnc}`).catch(() => {});
+  }
+
+  // Polling aguarda Tampermonkey confirmar publicação (até 90s)
+  await new Promise(r => setTimeout(r, 3000)); // aguarda Chrome abrir
+  btn.innerHTML = '<span class="spinner"></span> Preenchendo e publicando...';
+  showStatus('s4-status', 'loading', '<span class="spinner"></span> Tampermonkey está preenchendo o formulário e publicando... aguarde 🌸');
+
+  const inicio = Date.now();
+  const TIMEOUT = 90000;
+  const poll = setInterval(async () => {
+    if (Date.now() - inicio > TIMEOUT) {
+      clearInterval(poll);
+      showStatus('s4-status', 'error', '⏱️ Tempo esgotado. Verifique se o PC está ligado com o servidor local rodando e o Tampermonkey instalado. Publique manualmente se necessário.');
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Postar no Diário de Cuiabá';
+      return;
+    }
+    try {
+      const res = await fetchAuth(`${SERVER}/publicar-status`);
+      const data = await res.json();
+      if (data.ok === true) {
+        clearInterval(poll);
+        if (linkAtual) marcarPublicada(linkAtual);
+        showStatus('s4-status', 'success', '🎉 Publicado no Diário de Cuiabá com sucesso! 🌸');
+        btn.innerHTML = '✅ Publicado!';
+        btn.disabled = false;
+      }
+    } catch(e) {}
+  }, 2000);
+}
 
 function abrirGoogleImagens() {
   const url = window._googleFotosUrl || 'https://www.google.com/search?q=futebol&udm=2';
@@ -775,7 +1149,7 @@ function abrirGoogleImagens() {
   btn.disabled = true;
 
   // Loading no grid
-  grid.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:16px 0;grid-column:1/-1;">⏳ Aguardando fotos do Google...</p>';
+  grid.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:16px 0;grid-column:1/-1;">⏳ Aguardando fotos do Bing...</p>';
   grid.style.display = 'block';
 
   function restaurarBtn() {
@@ -783,47 +1157,69 @@ function abrirGoogleImagens() {
     btn.disabled = false;
   }
 
-  abaGoogle = window.open(url, '_blank');
+  // Drena qualquer cache antigo do servidor antes de abrir o Google
+  // (evita que fotos da matéria anterior apareçam na nova busca)
+  const RENDER = 'https://duda-news-server.onrender.com';
+  const drainCtrl = new AbortController();
+  setTimeout(() => drainCtrl.abort(), 2000);
+  fetchAuth(`${SERVER}/google-imagens`, { signal: drainCtrl.signal }).catch(() => {});
+  if (SERVER.includes('localhost')) {
+    const drainCtrl2 = new AbortController();
+    setTimeout(() => drainCtrl2.abort(), 2000);
+    fetch(`${RENDER}/google-imagens`, { signal: drainCtrl2.signal }).catch(() => {});
+  }
+
+  // Servidor abre o Chrome no PC
+  fetchAuth(`${SERVER}/abrir-google?url=${encodeURIComponent(url)}`).catch(() => {});
 
   // Polling no servidor como fallback (caso window.opener seja null no Google)
+  // Começa com 1 tick de delay extra para o drain terminar antes de buscar
+  const fetchImagens = (ep) => {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), 2500);
+    return fetchAuth(`${ep}/google-imagens`, { signal: ctrl.signal })
+      .then(r => r.json())
+      .catch(() => ({ urls: [] }))
+      .finally(() => clearTimeout(id));
+  };
   let tentativas = 0;
   const poll = setInterval(async () => {
     tentativas++;
-    if (tentativas > 30) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; } // para após 30s
-    if (grid.querySelector('img')) { clearInterval(poll); return; } // já recebeu por postMessage
-    try {
-      const res = await fetch(`${SERVER}/google-imagens`);
-      const data = await res.json();
-      if (data.urls && data.urls.length > 0) {
-        clearInterval(poll);
-        exibirGridFotos(data.urls);
-        restaurarBtn();
-      }
-    } catch(e) {}
-  }, 1000);
+    if (tentativas > 40) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; }
+    if (grid.querySelector('img')) { clearInterval(poll); return; }
+    const isLocal = SERVER.includes('localhost');
+    const [resLocal, resRender] = await Promise.all([
+      fetchImagens(SERVER),
+      isLocal ? fetchImagens(RENDER) : Promise.resolve({ urls: [] }),
+    ]);
+    const urls = resLocal.urls?.length ? resLocal.urls : (resRender.urls || []);
+    if (urls.length > 0) {
+      clearInterval(poll);
+      exibirGridFotos(urls);
+      restaurarBtn();
+    }
+  }, 1500);
 }
 
 function exibirGridFotos(urls) {
   const grid = document.getElementById('google-fotos-grid');
   grid.innerHTML = '';
-  // Restaura o botão caso tenha sido desabilitado
   const btn = document.getElementById('btn-google-fotos');
   if (btn) { btn.textContent = '🔍 Abrir Google Imagens'; btn.disabled = false; }
 
-  // Fila de reserva: começa com tudo, os 6 primeiros vão para o grid
   const fila = [...urls];
 
   function tentarUrl(img, url) {
     img.src = url;
     img.onclick = () => {
-      selecionarFotoDoGrid(img.src);
+      selecionarFotoDoGrid(img.src); // cancela IA e seleciona manualmente
       grid.style.display = 'none';
     };
     img.onerror = () => {
       if (fila.length > 0) {
-        tentarUrl(img, fila.shift()); // tenta próxima da fila
+        tentarUrl(img, fila.shift());
       } else {
-        img.remove(); // sem reserva, remove o slot
+        img.remove();
         if (grid.children.length === 0) grid.style.display = 'none';
       }
     };
@@ -840,6 +1236,8 @@ function exibirGridFotos(urls) {
 
   if (iniciais.length > 0) {
     grid.style.display = 'grid';
+    // Dispara seleção automática em paralelo com o grid visível
+    iniciarSelecaoAutomatica(urls);
   }
 }
 
@@ -853,11 +1251,213 @@ function updateCount() {
     document.getElementById('edit-texto').value.length.toLocaleString('pt-BR') + ' caracteres';
 }
 
+function updateComplementoCount() {
+  const len = document.getElementById('edit-complemento').value.length;
+  const el = document.getElementById('complemento-count');
+  el.textContent = `${len} / 100`;
+  el.style.color = len > 90 ? '#e65100' : '#ccc';
+}
+
+function usarComplemento(val) {
+  document.getElementById('edit-complemento').value = val;
+  updateComplementoCount();
+  if (val) document.getElementById('edit-complemento').focus();
+}
+
+function renderizarSugestoes(sugestoes) {
+  const lista = document.getElementById('complemento-sugestoes-lista');
+  lista.innerHTML = '';
+  sugestoes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.style.cssText = 'text-align:left;white-space:normal;height:auto;padding:8px 12px;line-height:1.4;border-color:var(--pink-border);color:#555;';
+    btn.textContent = s;
+    btn.onclick = () => usarComplemento(s);
+    lista.appendChild(btn);
+  });
+  document.getElementById('complemento-sugestoes').style.display = 'block';
+}
+
+async function sugerirComplemento(titulo, texto) {
+  const key = localStorage.getItem('anthropic_key');
+  if (!key) return;
+  const loadingEl = document.getElementById('complemento-loading');
+  const sugestoesEl = document.getElementById('complemento-sugestoes');
+  loadingEl.style.display = 'block';
+  sugestoesEl.style.display = 'none';
+  try {
+    const res = await fetchAuth(`${SERVER}/sugerir-complemento`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, texto: texto.split(/\s+/).slice(0, 200).join(' '), apiKey: key }),
+    });
+    const data = await res.json();
+    if (data.ok && data.sugestoes?.length) renderizarSugestoes(data.sugestoes);
+  } catch(e) {}
+  loadingEl.style.display = 'none';
+}
+
+function usarLegenda(val) {
+  document.getElementById('conf-legenda').value = val;
+  if (val) document.getElementById('conf-legenda').focus();
+}
+
+function usarLegendaStep3(val) {
+  document.getElementById('step3-legenda-input').value = val;
+  if (val) document.getElementById('step3-legenda-input').focus();
+}
+
+function renderizarSugestoesLegendaStep3(sugestoes) {
+  const lista = document.getElementById('step3-legenda-lista');
+  lista.innerHTML = '';
+  sugestoes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.style.cssText = 'text-align:left;white-space:normal;height:auto;padding:8px 12px;line-height:1.4;border-color:var(--pink-border);color:#555;';
+    btn.textContent = s;
+    btn.onclick = () => usarLegendaStep3(s);
+    lista.appendChild(btn);
+  });
+  document.getElementById('step3-legenda-sugestoes').style.display = 'block';
+}
+
+async function gerarLegendasStep3(imageUrl) {
+  const key = localStorage.getItem('anthropic_key');
+  if (!key) return;
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  if (!titulo) return;
+
+  const box = document.getElementById('step3-legenda-box');
+  const loading = document.getElementById('step3-legenda-loading');
+  const sugestoes = document.getElementById('step3-legenda-sugestoes');
+
+  box.style.display = 'block';
+  loading.style.display = 'block';
+  sugestoes.style.display = 'none';
+  document.getElementById('step3-legenda-input').value = '';
+  document.getElementById('step3-legenda-lista').innerHTML = '';
+
+  try {
+    const res = await fetchAuth(`${SERVER}/sugerir-legenda-foto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl, titulo, apiKey: key }),
+    });
+    const data = await res.json();
+    if (data.ok && data.sugestoes?.length) renderizarSugestoesLegendaStep3(data.sugestoes);
+  } catch(e) {}
+  loading.style.display = 'none';
+}
+
+function renderizarSugestoesLegenda(sugestoes) {
+  const lista = document.getElementById('legenda-sugestoes-lista');
+  lista.innerHTML = '';
+  sugestoes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.style.cssText = 'text-align:left;white-space:normal;height:auto;padding:8px 12px;line-height:1.4;border-color:var(--pink-border);color:#555;';
+    btn.textContent = s;
+    btn.onclick = () => usarLegenda(s);
+    lista.appendChild(btn);
+  });
+  document.getElementById('legenda-sugestoes').style.display = 'block';
+}
+
+// ── CANAL DE COMUNICAÇÃO ──
+// Para adicionar novidades: insira um novo objeto no INÍCIO do array com id maior.
+const CHANGELOG = [
+  { id: 1, data: '26/04/2025', texto: 'Corrigido: campo "Local" agora recebe "Estadão Conteúdo" quando a matéria tem autor' },
+];
+
+function renderizarChangelog() {
+  let vistos;
+  try { vistos = JSON.parse(localStorage.getItem('tanaka_avisos_vistos') || '[]'); } catch { vistos = []; }
+  const lista = document.getElementById('canal-updates-lista');
+  if (!lista) return;
+  lista.innerHTML = '';
+  CHANGELOG.forEach(item => {
+    const isNovo = !vistos.includes(item.id);
+    const div = document.createElement('div');
+    div.className = 'canal-update-item';
+    div.innerHTML = `<div class="canal-update-data">${item.data}${isNovo ? '<span class="canal-novo-tag">NOVO</span>' : ''}</div>${item.texto}`;
+    lista.appendChild(div);
+  });
+  const novos = CHANGELOG.filter(c => !vistos.includes(c.id)).length;
+  const badge = document.getElementById('canal-badge');
+  if (badge) { badge.textContent = novos; badge.style.display = novos > 0 ? 'flex' : 'none'; }
+}
+
+function abrirCanal() {
+  renderizarChangelog();
+  document.getElementById('modal-canal').classList.add('active');
+  document.getElementById('canal-msg-input').value = '';
+  document.getElementById('canal-feedback-status').style.display = 'none';
+  const ids = CHANGELOG.map(c => c.id);
+  localStorage.setItem('tanaka_avisos_vistos', JSON.stringify(ids));
+  const badge = document.getElementById('canal-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function fecharCanal() {
+  document.getElementById('modal-canal').classList.remove('active');
+}
+
+async function enviarFeedback() {
+  const msg = document.getElementById('canal-msg-input').value.trim();
+  if (!msg) { document.getElementById('canal-msg-input').focus(); return; }
+  const btn = document.getElementById('btn-canal-enviar');
+  const statusEl = document.getElementById('canal-feedback-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Enviando...';
+  statusEl.style.display = 'none';
+  try {
+    const res = await fetchAuth(`${SERVER}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensagem: msg }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'status success';
+      statusEl.textContent = '✅ Mensagem enviada! Obrigada 🌸';
+      statusEl.style.display = 'block';
+      document.getElementById('canal-msg-input').value = '';
+      setTimeout(() => { statusEl.style.display = 'none'; }, 3500);
+    } else { throw new Error(data.erro || 'Erro'); }
+  } catch(e) {
+    statusEl.className = 'status error';
+    statusEl.textContent = '❌ Erro ao enviar. Tente de novo.';
+    statusEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '📩 Enviar';
+}
+
+async function sugerirLegenda(titulo, legendaBase) {
+  const key = localStorage.getItem('anthropic_key');
+  if (!key) return;
+  document.getElementById('legenda-loading').style.display = 'block';
+  document.getElementById('legenda-sugestoes').style.display = 'none';
+  try {
+    const res = await fetchAuth(`${SERVER}/sugerir-legenda`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, legenda: legendaBase, apiKey: key }),
+    });
+    const data = await res.json();
+    if (data.ok && data.sugestoes?.length) renderizarSugestoesLegenda(data.sugestoes);
+  } catch(e) {}
+  document.getElementById('legenda-loading').style.display = 'none';
+}
+
 function salvarConfig() {
   localStorage.setItem('duda_user', document.getElementById('cfg-user').value.trim());
   localStorage.setItem('duda_pass', document.getElementById('cfg-pass').value);
   const key = document.getElementById('cfg-anthropic').value.trim();
   if (key) localStorage.setItem('anthropic_key', key);
+  const token = document.getElementById('cfg-token').value.trim();
+  if (token) localStorage.setItem('tanaka_token', token);
+  else localStorage.removeItem('tanaka_token');
   showStatus('cfg-status', 'success', '💾 Salvo com sucesso!');
   setTimeout(() => hideStatus('cfg-status'), 2000);
 }
@@ -872,7 +1472,7 @@ async function classificarChapeu(titulo, texto) {
   showStatus('s1-status', 'loading', '<span class="spinner"></span> 🤖 Identificando esporte...');
   const primeiras200 = texto.split(/\s+/).slice(0, 200).join(' ');
   try {
-    const res = await fetch(`${SERVER}/classificar-chapeu`, {
+    const res = await fetchAuth(`${SERVER}/classificar-chapeu`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ titulo, texto: primeiras200, apiKey: key }),
@@ -896,13 +1496,214 @@ async function classificarChapeu(titulo, texto) {
 async function testarServidor() {
   showStatus('cfg-status', 'loading', '<span class="spinner"></span> Testando conexão...');
   try {
-    const res = await fetch(`${SERVER}/`);
+    const res = await fetch(`${SERVER}/status`);
     const data = await res.json();
     showStatus('cfg-status', 'success', '🟢 ' + data.message);
   } catch(e) {
     showStatus('cfg-status', 'error', '🔴 Servidor offline. Aguarde 30s e tente de novo.');
   }
 }
+
+// ── LOGIN AUTOMÁTICO NO NEXTSITE ──
+// Tenta axios (servidor direto, sem reCAPTCHA JS) primeiro.
+// Se falhar, abre Chrome + Tampermonkey como fallback.
+async function loginNextSite(dadosUpload = null, statusElId = null) {
+  const user = localStorage.getItem('duda_user') || '';
+  const pass = localStorage.getItem('duda_pass') || '';
+  const elId = statusElId || 's1-status';
+
+  if (!user || !pass) {
+    showStatus(elId, 'error', '⚙️ Configure seu login em Configurações primeiro!');
+    switchTab('config');
+    return;
+  }
+
+  showStatus(elId, 'loading', '<span class="spinner"></span> 🔑 Fazendo login no NextSite...');
+
+  // Tentativa 1: axios direto no servidor (sem reCAPTCHA JS)
+  try {
+    const res = await fetchAuth(`${SERVER}/login-nextsite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user, pass }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      fecharModalCookie();
+      if (dadosUpload) {
+        showStatus(elId, 'loading', '<span class="spinner"></span> ✅ Login feito — reenviando foto...');
+        setTimeout(() => confirmarFotoManual(dadosUpload), 300);
+      } else if (statusElId === 'foto-upload-status') {
+        showStatus(elId, 'loading', '<span class="spinner"></span> ✅ Login feito — reenviando foto...');
+        setTimeout(() => confirmarFotoManual(), 300);
+      } else {
+        showStatus(elId, 'success', '✅ Login feito! Cookie renovado 🌸');
+      }
+      return;
+    }
+    // Axios falhou — tenta Chrome
+    showStatus(elId, 'loading', '<span class="spinner"></span> 🔑 Abrindo Chrome para login (reCAPTCHA)...');
+  } catch(e) {
+    showStatus(elId, 'loading', '<span class="spinner"></span> 🔑 Abrindo Chrome para login...');
+  }
+
+  // Tentativa 2: Chrome + Tampermonkey
+  const LOGIN_URL = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/login.php?tanaka_login=1';
+  const urlEnc = encodeURIComponent(LOGIN_URL);
+  fetchAuth(`${SERVER}/abrir-google?url=${urlEnc}`).catch(() => {});
+  if (!SERVER.includes('localhost')) {
+    fetch(`http://localhost:3003/abrir-google?url=${urlEnc}`).catch(() => {});
+  }
+
+  const loginStart = Date.now();
+  await new Promise(resolve => {
+    const iv = setInterval(async () => {
+      if (Date.now() - loginStart > 40000) {
+        clearInterval(iv);
+        showStatus(elId, 'error', '⏱️ Tempo esgotado. Verifique se o PC está ligado com o Tampermonkey instalado.');
+        resolve();
+        return;
+      }
+      try {
+        const r = await fetchAuth(`${SERVER}/login-completo`);
+        const data = await r.json();
+        if (data.ok && data.ts >= loginStart) {
+          clearInterval(iv);
+          fecharModalCookie();
+          if (dadosUpload) {
+            showStatus(elId, 'loading', '<span class="spinner"></span> ✅ Login feito — reenviando foto...');
+            setTimeout(() => confirmarFotoManual(dadosUpload), 300);
+          } else if (statusElId === 'foto-upload-status') {
+            showStatus(elId, 'loading', '<span class="spinner"></span> ✅ Login feito — reenviando foto...');
+            setTimeout(() => confirmarFotoManual(), 300);
+          } else {
+            showStatus(elId, 'success', '✅ Login feito! Cookie renovado 🌸');
+          }
+          resolve();
+        }
+      } catch(e) {}
+    }, 2000);
+  });
+}
+
+// ── RENOVAR COOKIE VIA SERVIDOR ──
+// Abre NextSite no Chrome do PC → Tampermonkey extrai PHPSESSID e salva no servidor
+async function renovarCookieServidor(dadosUpload = null, statusElId = null) {
+  const NEXTSITE_URL = 'https://admin-dc4.nextsite.com.br/t53kx1_admin/dashboard/?tanaka_cookie=1';
+  if (statusElId) showStatus(statusElId, 'loading', '<span class="spinner"></span> 🔑 Cookie expirado — renovando no PC...');
+  try { await fetchAuth(`${SERVER}/abrir-google?url=${encodeURIComponent(NEXTSITE_URL)}`); } catch(e) {}
+  // Tampermonkey leva ~2s para salvar o cookie; aguarda 5s por segurança
+  await new Promise(r => setTimeout(r, 5000));
+  if (dadosUpload) {
+    if (statusElId) showStatus(statusElId, 'loading', '<span class="spinner"></span> 🔄 Cookie renovado — reenviando foto...');
+    setTimeout(() => { fecharModalCookie(); confirmarFotoManual(dadosUpload); }, 200);
+  } else {
+    if (statusElId) showStatus(statusElId, 'success', '✅ Cookie renovado! Tente de novo.');
+  }
+}
+
+// ── MODAL COOKIE ──
+let _pendingUpload = null; // guarda os dados do upload para retentar após salvar cookie
+
+function abrirModalCookie(dadosUpload) {
+  _pendingUpload = dadosUpload || null;
+  document.getElementById('modal-cookie').classList.add('active');
+  document.getElementById('modal-phpsessid').value = '';
+  document.getElementById('modal-cookie-status').style.display = 'none';
+  setTimeout(() => document.getElementById('modal-phpsessid').focus(), 100);
+}
+
+function fecharModalCookie() {
+  document.getElementById('modal-cookie').classList.remove('active');
+  _pendingUpload = null;
+}
+
+async function salvarCookieModal() {
+  const val = document.getElementById('modal-phpsessid').value.trim();
+  if (!val) {
+    const s = document.getElementById('modal-cookie-status');
+    s.style.display = 'block'; s.className = 'status error';
+    s.textContent = '❌ Cole o PHPSESSID antes de salvar!';
+    return;
+  }
+  const s = document.getElementById('modal-cookie-status');
+  s.style.display = 'block'; s.className = 'status loading';
+  s.innerHTML = '<span class="spinner"></span> Salvando...';
+
+  try {
+    const res = await fetchAuth(`${SERVER}/cookie`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phpsessid: val })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      s.className = 'status success';
+      s.textContent = '✅ Cookie salvo! Reenviando foto...';
+      setTimeout(() => {
+        fecharModalCookie();
+        if (_pendingUpload) confirmarFotoManual(_pendingUpload);
+      }, 900);
+    } else {
+      s.className = 'status error';
+      s.textContent = '❌ ' + (data.erro || 'Erro ao salvar');
+    }
+  } catch(e) {
+    s.className = 'status error';
+    s.textContent = '❌ Erro de conexão.';
+  }
+}
 </script>
+
+<!-- Botão flutuante canal -->
+<button id="btn-canal-float" onclick="abrirCanal()">🔔 <span id="canal-badge">1</span></button>
+
+<!-- Modal canal de comunicação -->
+<div class="modal-overlay" id="modal-canal" onclick="if(event.target===this)fecharCanal()">
+  <div class="canal-modal-box">
+    <div class="canal-header">
+      <div class="canal-title">📢 Canal de Comunicação</div>
+      <div class="canal-desc">Novidades do app e suas sugestões</div>
+    </div>
+    <div class="canal-section">
+      <div class="canal-section-title">✨ Atualizações recentes</div>
+      <div id="canal-updates-lista"></div>
+    </div>
+    <hr class="canal-divider">
+    <div class="canal-section">
+      <div class="canal-section-title">💬 Enviar sugestão ou reportar erro</div>
+      <textarea class="canal-textarea" id="canal-msg-input"
+        placeholder="Descreva sua sugestão ou o erro que aconteceu..."
+        autocorrect="on" autocapitalize="sentences" maxlength="1000"></textarea>
+      <div id="canal-feedback-status" class="status" style="display:none;margin-top:8px;"></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn primary" id="btn-canal-enviar" onclick="enviarFeedback()">📩 Enviar</button>
+        <button class="btn" onclick="fecharCanal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal renovar cookie -->
+<div class="modal-overlay" id="modal-cookie" onclick="if(event.target===this)fecharModalCookie()">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Renovar sessão NextSite</div>
+    <div class="modal-desc">Sessão expirada. O app vai fazer login automaticamente no NextSite.</div>
+    <div id="modal-cookie-status" class="status" style="display:none"></div>
+    <div class="modal-btns" style="flex-direction:column;gap:8px;">
+      <button class="btn primary" onclick="loginNextSite(_pendingUpload,'modal-cookie-status')">🔑 Login automático</button>
+      <button class="btn" onclick="document.getElementById('modal-cookie-manual').style.display='block';this.style.display='none'">✏️ Colar PHPSESSID manualmente</button>
+    </div>
+    <div id="modal-cookie-manual" style="display:none;margin-top:12px;">
+      <label style="font-size:13px;color:#555;">PHPSESSID</label>
+      <input type="text" id="modal-phpsessid"
+        placeholder="Cole aqui o valor do cookie"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')salvarCookieModal()" />
+      <button class="btn primary" style="margin-top:6px;width:100%;" onclick="salvarCookieModal()">💾 Salvar e reenviar</button>
+    </div>
+    <button class="btn" style="margin-top:8px;width:100%;" onclick="fecharModalCookie()">Cancelar</button>
+  </div>
+</div>
 </body>
 </html>
