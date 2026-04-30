@@ -40,7 +40,7 @@ app.get('/health', (req, res) => {
 const TANAKA_TOKEN = process.env.TANAKA_TOKEN || '';
 if (TANAKA_TOKEN) {
   app.use((req, res, next) => {
-    const rotasPublicas = ['/', '/app', '/health'];
+    const rotasPublicas = ['/', '/app', '/health', '/apple-touch-icon.png', '/favicon.ico', '/favicon.svg', '/manifest.json', '/service-worker.js', '/offline.html'];
     if (rotasPublicas.includes(req.path)) return next();
     // Rotas usadas pelo Tampermonkey (roda no PC, chama localhost diretamente)
     const rotasTampermonkey = ['/google-imagens', '/foto-enviada', '/diagnostico', '/publicar-status', '/login-completo', '/publicacao-pendente', '/payload-publicar'];
