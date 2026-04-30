@@ -10,7 +10,7 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // ── LOG DE TODAS AS REQUISIÇÕES ──
 app.use((req, res, next) => {
@@ -40,7 +40,7 @@ if (TANAKA_TOKEN) {
     const rotasPublicas = ['/', '/app', '/health'];
     if (rotasPublicas.includes(req.path)) return next();
     // Rotas usadas pelo Tampermonkey (roda no PC, chama localhost diretamente)
-    const rotasTampermonkey = ['/google-imagens', '/foto-enviada', '/diagnostico', '/publicar-status', '/login-completo', '/publicacao-pendente'];
+    const rotasTampermonkey = ['/google-imagens', '/foto-enviada', '/diagnostico', '/publicar-status', '/login-completo', '/publicacao-pendente', '/payload-publicar'];
     if (rotasTampermonkey.includes(req.path)) return next();
     const token = req.headers['x-tanaka-token'] || req.query.token || '';
     if (token !== TANAKA_TOKEN) return res.status(401).json({ erro: 'Token inválido' });
@@ -49,6 +49,28 @@ if (TANAKA_TOKEN) {
   console.log('[AUTH] Proteção por token ativa.');
 }
 const path2 = require('path');
+
+// ── PAYLOAD DE PUBLICAÇÃO (evita URL longa no comando do Windows) ──
+// Frontend salva o JSON aqui e recebe um token curto.
+// Tampermonkey busca o payload pelo token — URL fica pequena.
+const payloadsPendentes = new Map();
+
+app.post('/payload-publicar', (req, res) => {
+  const dados = req.body;
+  if (!dados || (!dados.titulo && !dados.texto)) return res.status(400).json({ ok: false, erro: 'Payload inválido' });
+  const token = Math.random().toString(36).slice(2, 10); // 8 chars aleatórios
+  payloadsPendentes.set(token, dados);
+  setTimeout(() => payloadsPendentes.delete(token), 10 * 60 * 1000); // expira em 10min
+  console.log(`[PAYLOAD] Salvo token=${token} para: "${String(dados.titulo || '').substring(0, 40)}"`);
+  res.json({ ok: true, token });
+});
+
+app.get('/payload-publicar', (req, res) => {
+  const { token } = req.query;
+  const dados = payloadsPendentes.get(token);
+  if (!dados) return res.status(404).json({ ok: false, erro: 'Payload não encontrado ou expirado' });
+  res.json({ ok: true, ...dados });
+});
 
 // ── PUBLICADAS (estado compartilhado entre todos os usuários) ──
 const publicadasSet = new Set();
@@ -69,6 +91,12 @@ app.get('/', (req, res) => {
 app.get('/app', (req, res) => {
   res.redirect('/');
 });
+
+// ── PWA — arquivos estáticos ──
+app.get('/manifest.json',      (req, res) => res.sendFile(path2.join(__dirname, 'public', 'manifest.json')));
+app.get('/service-worker.js',  (req, res) => { res.setHeader('Service-Worker-Allowed', '/'); res.sendFile(path2.join(__dirname, 'public', 'service-worker.js')); });
+app.get('/offline.html',       (req, res) => res.sendFile(path2.join(__dirname, 'public', 'offline.html')));
+app.use('/icons', express.static(path2.join(__dirname, 'public', 'icons')));
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -205,9 +233,9 @@ async function comRetry(fn, tentativas = 3) {
     try {
       return await fn();
     } catch (e) {
-      const retentar = e.code === 'ECONNRESET' || e.code === 'ECONNABORTED';
+      const retentar = e.code === 'ECONNRESET' || e.code === 'ECONNABORTED' || /socket disconnected|tls/i.test(e.message || '');
       if (!retentar || i === tentativas - 1) throw e;
-      console.log(`[RETRY] Tentativa ${i + 2}/${tentativas} após ${e.code}...`);
+      console.log(`[RETRY] Tentativa ${i + 2}/${tentativas} após ${e.code || 'socket error'}...`);
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
@@ -527,18 +555,28 @@ app.post('/upload-foto', async (req, res) => {
     } catch (e) {
       console.warn(`[UPLOAD] ⚠️ Aviso na validação da URL: ${e.message} — tentando mesmo assim`);
     }
-    console.log(`[UPLOAD] 1/4 Baixando imagem: ${fotoUrl.substring(0, 80)}...`);
-    const imgRes = await comRetry(() => axios.get(fotoUrl, {
-      responseType: 'arraybuffer',
-      timeout: 35000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://www.google.com/',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-        'Connection': 'keep-alive',
-      },
-    }));
-    console.log(`[UPLOAD] 1/4 ✅ Imagem baixada: ${Math.round(imgRes.data.byteLength/1024)}KB`);
+    // Verifica se o Tampermonkey já baixou a imagem no navegador (contorna hotlinking)
+    const prefetch = imagensPrefetch.get(fotoUrl);
+    let imgRes;
+    if (prefetch && prefetch.b64) {
+      console.log(`[UPLOAD] 1/4 ✅ Usando bytes pré-baixados pelo Tampermonkey (${Math.round(prefetch.b64.length * 0.75 / 1024)}KB estimado)`);
+      imagensPrefetch.delete(fotoUrl); // libera memória após uso
+      const buf = Buffer.from(prefetch.b64, 'base64');
+      imgRes = { data: buf, headers: { 'content-type': prefetch.ct || 'image/jpeg' } };
+    } else {
+      console.log(`[UPLOAD] 1/4 Baixando imagem: ${fotoUrl.substring(0, 80)}...`);
+      imgRes = await comRetry(() => axios.get(fotoUrl, {
+        responseType: 'arraybuffer',
+        timeout: 35000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.google.com/',
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          'Connection': 'keep-alive',
+        },
+      }));
+      console.log(`[UPLOAD] 1/4 ✅ Imagem baixada: ${Math.round(imgRes.data.byteLength/1024)}KB`);
+    }
 
     // 2. Determina extensão pelo Content-Type
     const ct = imgRes.headers['content-type'] || 'image/jpeg';
@@ -826,20 +864,64 @@ app.post('/escolher-foto', async (req, res) => {
   }
 });
 
+// ── PROXY DE IMAGEM (contorna hotlinking e bloqueios de CORS) ──
+// O frontend envia a URL original → servidor busca com cabeçalhos de navegador real → devolve os bytes
+// Isso contorna sites que bloqueiam downloads diretos pelo servidor (hotlinking) porque o servidor
+// imita um usuário navegando no próprio site de origem.
+app.get('/proxy-img', async (req, res) => {
+  const { url } = req.query;
+  if (!url || !url.startsWith('http')) return res.status(400).json({ ok: false, erro: 'URL inválida' });
+
+  // Extrai o domínio da URL para usar como Referer (engana proteção de hotlink)
+  let referer = 'https://www.google.com/';
+  try { referer = new URL(url).origin + '/'; } catch {}
+
+  const tentativas = [
+    // Tentativa 1: se passa como navegador vindo do próprio site
+    { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36', 'Referer': referer, 'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8' },
+    // Tentativa 2: sem Referer (alguns sites bloqueiam referer externo mas permitem direto)
+    { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1', 'Accept': 'image/*,*/*;q=0.8' },
+    // Tentativa 3: Googlebot (muitos sites liberam para indexação)
+    { 'User-Agent': 'Googlebot-Image/1.0', 'Accept': 'image/*' },
+  ];
+
+  for (let i = 0; i < tentativas.length; i++) {
+    try {
+      const r = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 15000,
+        headers: tentativas[i],
+        maxRedirects: 5,
+      });
+      const ct = r.headers['content-type'] || 'image/jpeg';
+      if (!ct.startsWith('image/')) continue; // não é imagem, tenta próximo
+      console.log(`[PROXY-IMG] ✅ Tentativa ${i + 1} ok | ${Math.round(r.data.byteLength / 1024)}KB | ${url.substring(0, 70)}`);
+      res.set('Content-Type', ct);
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.send(Buffer.from(r.data));
+    } catch (e) {
+      console.warn(`[PROXY-IMG] ⚠️ Tentativa ${i + 1} falhou: ${e.message}`);
+    }
+  }
+
+  console.error(`[PROXY-IMG] ❌ Todas as tentativas falharam: ${url.substring(0, 80)}`);
+  res.status(502).json({ ok: false, erro: 'Imagem inacessível após 3 tentativas' });
+});
+
 // ── SUGERIR COMPLEMENTO (proxy para API Anthropic) ──
 app.post('/sugerir-complemento', async (req, res) => {
   const { titulo, texto, apiKey } = req.body;
   if (!titulo || !apiKey) return res.status(400).json({ ok: false, erro: 'titulo e apiKey são obrigatórios' });
   try {
     const primeiras300 = (texto || '').split(/\s+/).slice(0, 300).join(' ');
-    const r = await axios.post('https://api.anthropic.com/v1/messages', {
+    const r = await comRetry(() => axios.post('https://api.anthropic.com/v1/messages', {
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
       messages: [{ role: 'user', content: `Você é editor de um jornal esportivo brasileiro. Com base no título e texto da matéria, crie 3 sugestões de COMPLEMENTO. O complemento é um subtítulo curto que acrescenta contexto ao título principal — NÃO repita o título nem o parafraseie.\n\nRegras:\n- Máximo 100 caracteres cada\n- Em português\n- Sem pontuação no final\n- Foque em fatos específicos da matéria (placar, data, local, detalhe relevante)\n- Cada sugestão diferente das outras\n\nTítulo: "${titulo}"\nTexto: "${primeiras300}"\n\nResponda APENAS com JSON válido: {"sugestoes": ["sugestão 1", "sugestão 2", "sugestão 3"]}` }],
     }, {
       headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
       timeout: 25000,
-    });
+    }));
     const raw = r.data.content[0].text.trim();
     let parsed;
     try { const m = raw.match(/\{[\s\S]*?\}/); parsed = JSON.parse(m?.[0] || '{}'); } catch { parsed = {}; }
@@ -984,17 +1066,15 @@ app.post('/query-foto', async (req, res) => {
 app.get('/abrir-google', (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).json({ ok: false, erro: 'URL não informada' });
-  // Sanitiza URL para evitar injeção de comandos (RCE)
-  const urlSegura = url.replace(/[;$|`()"\\]/g, ''); // & é seguro dentro de aspas no Windows
+  const urlSegura = url.replace(/[;$|`()"\\]/g, '');
+  console.log(`[CHROME] Abrindo no PC: ${urlSegura.substring(0, 100)}`);
   exec(`start chrome "${urlSegura}"`, err => {
     if (err) {
-      console.warn('[CHROME] Chrome não encontrado, tentando Edge...');
       exec(`start msedge "${urlSegura}"`, err2 => {
-        if (err2) console.warn('[CHROME] Edge também falhou:', err2.message);
+        if (err2) console.warn('[CHROME] Edge falhou:', err2.message);
       });
     }
   });
-  console.log(`[CHROME] Abrindo no PC: ${urlSegura.substring(0, 80)}`);
   res.json({ ok: true });
 });
 
@@ -1008,9 +1088,18 @@ app.post('/diagnostico', (req, res) => {
 
 // ── GOOGLE IMAGENS (relay Tampermonkey → app) ──
 let googleImagensCache = [];
+// Mapa de URL → { b64, ct } pré-baixados pelo Tampermonkey no navegador
+const imagensPrefetch = new Map();
+
 app.post('/google-imagens', (req, res) => {
   googleImagensCache = req.body.urls || [];
-  console.log(`[FOTOS] 📥 Tampermonkey enviou ${googleImagensCache.length} URLs para o cache`);
+  // Tampermonkey pode enviar os bytes de cada imagem já baixados no navegador
+  const imagens = req.body.imagens || {};
+  let comBytes = 0;
+  for (const [url, dado] of Object.entries(imagens)) {
+    if (dado && dado.b64) { imagensPrefetch.set(url, dado); comBytes++; }
+  }
+  console.log(`[FOTOS] 📥 Tampermonkey enviou ${googleImagensCache.length} URLs | ${comBytes} com bytes pré-baixados`);
   if (googleImagensCache.length) googleImagensCache.forEach((u, i) => console.log(`[FOTOS]   ${i + 1}: ${u.substring(0, 80)}`));
   res.json({ ok: true });
 });

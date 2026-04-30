@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c2185b">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tanaka">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <title>Tanaka Sports ⚽</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -736,7 +742,8 @@ async function goStep3() {
   // Usa query pré-calculada pela IA (salva no prefetch) ou fallback pro título
   const queryFinal = window._queryFotoCache || titulo;
   window._googleFotosQuery = queryFinal;
-  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(queryFinal)}&udm=2&tbs=qdr:d`;
+  const _bloqueados = '-site:instagram.com -site:facebook.com -site:twitter.com -site:x.com -site:pinterest.com -site:tiktok.com';
+  window._googleFotosUrl = `https://www.google.com/search?q=${encodeURIComponent(queryFinal + ' ' + _bloqueados)}&udm=2&tbs=qdr:w`;
 
   document.getElementById('step3').style.display = 'block';
   document.getElementById('step4').style.display = 'none';
@@ -998,30 +1005,51 @@ function previewFotoUrl() {
 
 async function confirmarFotoManual(retry) {
   // retry: objeto { url, titulo } passado após renovar o cookie
-  const url     = retry?.url    || document.getElementById('foto-url').value.trim();
+  const urlOriginal = retry?.url || document.getElementById('foto-url').value.trim();
   const titulo  = retry?.titulo || document.getElementById('edit-titulo').value.trim();
   const legendaEscolhida = retry?.legendaEscolhida || document.getElementById('step3-legenda-input').value.trim();
   const nomeFoto = retry?.nomeFoto || legendaEscolhida || gerarNomeCurto(titulo);
 
   document.getElementById('btn-renovar-cookie-step3').style.display = 'none';
 
-  if (!url) {
+  if (!urlOriginal) {
     showStatus('foto-upload-status', 'error', '❌ Cole o link da foto primeiro!');
     return;
   }
 
   const btn = document.getElementById('btn-confirmar-foto');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Enviando...';
-  showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o Diário de Cuiabá...');
 
-  try {
+  async function tentarEnvio(fotoUrl, descricao) {
     const res = await fetchAuth(`${SERVER}/upload-foto`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fotoUrl: url, titulo, nomeFoto, descricaoFoto: legendaEscolhida || undefined, apiKey: localStorage.getItem('anthropic_key') || '' })
+      body: JSON.stringify({ fotoUrl, titulo, nomeFoto, descricaoFoto: legendaEscolhida || undefined, apiKey: localStorage.getItem('anthropic_key') || '' })
     });
-    const data = await res.json();
+    return { res, data: await res.json() };
+  }
+
+  try {
+    btn.innerHTML = '<span class="spinner"></span> Enviando...';
+    showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Enviando foto para o Diário de Cuiabá...');
+
+    let { res, data } = await tentarEnvio(urlOriginal);
+
+    // Se falhou por bloqueio de download (não é erro de cookie), tenta via proxy
+    const erroDownload = !data.ok && data.erro &&
+      (data.erro.toLowerCase().includes('download') || data.erro.toLowerCase().includes('403') ||
+       data.erro.toLowerCase().includes('404') || data.erro.toLowerCase().includes('inacess') ||
+       data.erro.toLowerCase().includes('timeout') || data.erro.toLowerCase().includes('connect'));
+    const erroAuth = res.status === 401 || (data.erro && data.erro.toLowerCase().includes('cookie'));
+
+    if (!data.ok && !erroAuth && !retry?.viaProxy) {
+      showStatus('foto-upload-status', 'loading', '<span class="spinner"></span> Foto bloqueada — tentando via intermediário... 🔄');
+      const proxyUrl = `${SERVER}/proxy-img?url=${encodeURIComponent(urlOriginal)}`;
+      const resultado2 = await tentarEnvio(proxyUrl);
+      res = resultado2.res;
+      data = resultado2.data;
+    }
+
     if (data.ok) {
       fetchAuth(`${SERVER}/foto-enviada`, { method: 'POST' }).catch(() => {});
       window._legendaFoto = data.legendaFinal || window._legendaFoto || '';
@@ -1030,11 +1058,13 @@ async function confirmarFotoManual(retry) {
       btn.innerHTML = '✅ Enviada!';
       setTimeout(() => goStep4(), 900);
     } else if (res.status === 401 || (data.erro && data.erro.toLowerCase().includes('cookie'))) {
-      loginNextSite({ url, titulo, nomeFoto }, 'foto-upload-status');
+      loginNextSite({ url: urlOriginal, titulo, nomeFoto }, 'foto-upload-status');
       btn.disabled = false;
       btn.innerHTML = '📤 Enviar foto →';
     } else {
-      showStatus('foto-upload-status', 'error', '❌ ' + (data.erro || 'Erro ao enviar'));
+      showStatus('foto-upload-status', 'error',
+        '❌ ' + (data.erro || 'Erro ao enviar') +
+        '<br><small style="color:#999">Tente outra foto ou toque em "Sem foto →"</small>');
       btn.disabled = false;
       btn.innerHTML = '📤 Enviar foto →';
     }
@@ -1085,14 +1115,25 @@ async function postarAutomatico() {
   document.getElementById('edit-titulo')._semFoto = false;
   // fotoNome = titulo_wda salvo no upload — Tampermonkey busca pelo mesmo texto
   const fotoNome = semFoto ? '' : (window._fotoNomeOriginal || legenda || gerarNomeCurto(titulo));
-  const json = JSON.stringify({ titulo, texto, chapeu, fotoNome, semFoto, autor, complemento, legenda, servidor: SERVER });
-  const dadosB64 = btoa(unescape(encodeURIComponent(json)));
-  const url = NEXTSITE + '&tanaka=' + dadosB64;
-
   const btn = document.getElementById('btn-publicar');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Abrindo Chrome...';
   showStatus('s4-status', 'loading', '<span class="spinner"></span> Abrindo o Diário de Cuiabá no PC...');
+
+  // Salva payload no servidor, usa só token curto na URL (evita limite de linha de comando Windows)
+  let url;
+  try {
+    const pr = await fetchAuth(`${SERVER}/payload-publicar`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, texto, chapeu, fotoNome, semFoto, autor, complemento, legenda, servidor: SERVER }),
+    });
+    const pd = await pr.json();
+    if (!pd.token) throw new Error('sem token');
+    url = NEXTSITE + '&tanaka_token=' + pd.token;
+  } catch(e) {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({ titulo, texto, chapeu, fotoNome, semFoto, autor, complemento, legenda, servidor: SERVER }))));
+    url = NEXTSITE + '&tanaka=' + b64;
+  }
 
   // Salva URL no servidor para recuperação caso NextSite peça login durante publicação
   fetchAuth(`${SERVER}/salvar-publicacao`, {
@@ -1185,7 +1226,13 @@ function abrirGoogleImagens() {
   let tentativas = 0;
   const poll = setInterval(async () => {
     tentativas++;
-    if (tentativas > 40) { clearInterval(poll); restaurarBtn(); grid.innerHTML = ''; grid.style.display = 'none'; return; }
+    if (tentativas > 40) {
+      clearInterval(poll);
+      restaurarBtn();
+      grid.innerHTML = '<p style="text-align:center;color:#c62828;font-size:13px;padding:16px 8px;grid-column:1/-1;line-height:1.6;">⚠️ Tampermonkey não respondeu.<br>Verifique se está <b>ativo no Chrome</b> e clique em "Abrir Google Imagens" novamente.</p>';
+      grid.style.display = 'block';
+      return;
+    }
     if (grid.querySelector('img')) { clearInterval(poll); return; }
     const isLocal = SERVER.includes('localhost');
     const [resLocal, resRender] = await Promise.all([
@@ -1705,5 +1752,15 @@ async function salvarCookieModal() {
     <button class="btn" style="margin-top:8px;width:100%;" onclick="fecharModalCookie()">Cancelar</button>
   </div>
 </div>
+<!-- Registro do Service Worker (PWA) -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(r => console.log('[SW] Registrado:', r.scope))
+      .catch(e => console.warn('[SW] Falha ao registrar:', e));
+  });
+}
+</script>
 </body>
 </html>
