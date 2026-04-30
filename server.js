@@ -31,6 +31,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: Math.floor(process.uptime()), ts: Date.now() });
 });
 
+// ── ÍCONES PÚBLICOS (antes do auth) ──
+app.get('/apple-touch-icon.png', (req, res) => { res.setHeader('Content-Type', 'image/png'); res.send(APPLE_TOUCH_ICON); });
+app.get('/favicon.ico', (req, res) => { res.setHeader('Content-Type', 'image/x-icon'); res.send(FAVICON_ICO); });
+
 // ── AUTENTICAÇÃO POR TOKEN (opcional) ──
 // Para ativar: defina TANAKA_TOKEN no ambiente antes de rodar o servidor
 //   Windows: set TANAKA_TOKEN=minhasenha && node server.js
